@@ -353,6 +353,7 @@
         let rayGraphics;
         let leftStick;
         let rightStick;
+        let currentLevel = 1;
 
         class Bullet extends Phaser.Physics.Arcade.Sprite {
             constructor(scene, x, y) {
@@ -498,7 +499,7 @@
 
                 if (isMissionComplete) return;
 
-                if (isObjectiveCollected && this.state !== 'CHASE') {
+                if (isObjectiveCollected && this.state !== 'CHASE' && this.state !== 'ALERT') {
                     this.state = 'CHASE';
                 }
 
@@ -629,53 +630,15 @@
                 for (let x = 0; x < LEVEL_WIDTH; x += 64) this.add.image(x + 32, y + 32, 'tanks', 'tileGrass1.png');
             }
 
-            for (let x = 100; x < 700; x += 64) this.add.image(x, 100, 'tanks', 'tileGrass_roadEast.png');
-            for (let x = 100; x < 700; x += 64) this.add.image(x, 500, 'tanks', 'tileGrass_roadEast.png');
-            for (let y = 100; y < 500; y += 64) this.add.image(100, y, 'tanks', 'tileGrass_roadNorth.png');
-            for (let y = 100; y < 500; y += 64) this.add.image(700, y, 'tanks', 'tileGrass_roadNorth.png');
-            this.add.image(100, 100, 'tanks', 'tileGrass_roadCornerLR.png');
-            this.add.image(700, 100, 'tanks', 'tileGrass_roadCornerLL.png');
-            this.add.image(100, 500, 'tanks', 'tileGrass_roadCornerUR.png');
-            this.add.image(700, 500, 'tanks', 'tileGrass_roadCornerUL.png');
-
             obstacles = this.physics.add.staticGroup();
-            obstacles.create(400, 300, 'tanks', 'crateMetal.png');
-            obstacles.create(300, 300, 'tanks', 'treeGreen_large.png');
-            obstacles.create(500, 300, 'tanks', 'treeGreen_large.png');
-            obstacles.create(200, 200, 'tanks', 'crateWood.png');
-            obstacles.create(600, 400, 'tanks', 'crateWood.png');
-
             hazards = this.physics.add.staticGroup();
-            this.add.image(250, 450, 'tanks', 'wireCrooked.png').setAngle(45);
-            const oil = this.physics.add.image(550, 150, 'tanks', 'oilSpill_large.png');
-
             bullets = this.physics.add.group({
                 classType: Bullet,
                 maxSize: 50,
                 runChildUpdate: false
             });
-
             sentryHulls = this.physics.add.group();
             sentries = [];
-
-            player = new PlayerTank(this, 100, 300);
-
-            extractionZone = this.add.rectangle(100, 300, 100, 100, 0x00ff00, 0.2);
-            this.physics.add.existing(extractionZone, true);
-
-            objective = this.physics.add.image(700, 300, 'tanks', 'specialBarrel1_outline.png');
-
-            const s1 = new SentryTank(this, [{ x: 200, y: 100 }, { x: 600, y: 100 }]);
-            sentries.push(s1);
-            sentryHulls.add(s1.hull);
-
-            const s2 = new SentryTank(this, [{ x: 600, y: 500 }, { x: 200, y: 500 }]);
-            sentries.push(s2);
-            sentryHulls.add(s2.hull);
-
-            this.physics.add.collider(player.hull, obstacles);
-            this.physics.add.collider(sentryHulls, obstacles);
-            this.physics.add.collider(player.hull, sentryHulls);
 
             this.physics.add.collider(bullets, obstacles, (bullet, obstacle) => {
                 if (!bullet.active) return;
@@ -693,9 +656,117 @@
                 }
             });
 
+
+            rayGraphics = this.add.graphics();
+
+            createMobileControls.call(this);
+
+            startLevel.call(this, currentLevel);
+        }
+
+        function startLevel(levelNum) {
+            currentLevel = levelNum;
+            isMissionComplete = false;
+            isObjectiveCollected = false;
+            document.getElementById('mission-status').style.display = 'block';
+            document.getElementById('mission-status').innerText = 'LEVEL ' + levelNum + ' START';
+            document.getElementById('mission-status').style.color = '#00d2ff';
+            document.getElementById('mission-status').style.borderColor = '#00d2ff';
+
+            this.time.delayedCall(2000, () => {
+                if (!isMissionComplete) document.getElementById('mission-status').style.display = 'none';
+            });
+
+            document.querySelectorAll('.status-alert').forEach(el => {
+                el.className = 'status-ok';
+                el.innerText = 'ACTIVE';
+            });
+
+            if (player) {
+                player.destroy();
+                player = null;
+            }
+            obstacles.clear(true, true);
+            hazards.clear(true, true);
+            bullets.clear(true, true);
+            sentryHulls.clear(true, true);
+            sentries = [];
+            if (objective) objective.destroy();
+            if (extractionZone) extractionZone.destroy();
+
+            const LEVEL_WIDTH = 1600;
+            const LEVEL_HEIGHT = 1200;
+
+            for (let i = 0; i < 30 + (levelNum * 5); i++) {
+                const x = Phaser.Math.Between(100, LEVEL_WIDTH - 100);
+                const y = Phaser.Math.Between(100, LEVEL_HEIGHT - 100);
+                const type = Phaser.Math.RND.pick(['crateMetal.png', 'crateWood.png', 'treeGreen_large.png', 'barricadeWood.png']);
+                obstacles.create(x, y, 'tanks', type);
+            }
+
+            const corners = [
+                { x: 200, y: 200 },
+                { x: LEVEL_WIDTH - 200, y: 200 },
+                { x: 200, y: LEVEL_HEIGHT - 200 },
+                { x: LEVEL_WIDTH - 200, y: LEVEL_HEIGHT - 200 }
+            ];
+            const startIdx = Phaser.Math.Between(0, 3);
+            const startPos = corners[startIdx];
+
+            player = new PlayerTank(this, startPos.x, startPos.y);
+            this.cameras.main.startFollow(player.hull);
+
+            let objX, objY;
+            do {
+                objX = Phaser.Math.Between(200, LEVEL_WIDTH - 200);
+                objY = Phaser.Math.Between(200, LEVEL_HEIGHT - 200);
+            } while (Phaser.Math.Distance.Between(startPos.x, startPos.y, objX, objY) < 800);
+
+            objective = this.physics.add.image(objX, objY, 'tanks', 'specialBarrel1_outline.png');
+
+            extractionZone = this.add.rectangle(startPos.x, startPos.y, 120, 120, 0x00ff00, 0.2);
+            this.physics.add.existing(extractionZone, true);
+
+            const enemyCount = 2 + Math.floor(levelNum * 1.5);
+            for (let i = 0; i < enemyCount; i++) {
+                let ex, ey;
+                do {
+                    ex = Phaser.Math.Between(100, LEVEL_WIDTH - 100);
+                    ey = Phaser.Math.Between(100, LEVEL_HEIGHT - 100);
+                } while (Phaser.Math.Distance.Between(startPos.x, startPos.y, ex, ey) < 500);
+
+                const path = [{ x: ex, y: ey }];
+                path.push({
+                    x: Phaser.Math.Clamp(ex + Phaser.Math.Between(-400, 400), 100, LEVEL_WIDTH - 100),
+                    y: Phaser.Math.Clamp(ey + Phaser.Math.Between(-400, 400), 100, LEVEL_HEIGHT - 100)
+                });
+
+                const s = new SentryTank(this, path);
+                sentries.push(s);
+                sentryHulls.add(s.hull);
+            }
+
+            this.physics.add.collider(player.hull, obstacles);
+            this.physics.add.collider(player.hull, sentryHulls);
+
+            this.physics.add.collider(sentryHulls, obstacles);
+
+            this.physics.add.overlap(bullets, player.hull, (hull, bullet) => {
+                if (!bullet.active || bullet.isPlayerBullet) return;
+                bullet.reset();
+                player.destroy();
+                document.getElementById('mission-status').style.display = 'block';
+                document.getElementById('mission-status').innerText = 'MISSION FAILED - RESTARTING...';
+                document.getElementById('mission-status').style.color = '#e74c3c';
+                document.getElementById('mission-status').style.borderColor = '#e74c3c';
+
+                this.time.delayedCall(3000, () => {
+                    startLevel.call(this, currentLevel);
+                });
+            });
+
             this.physics.add.overlap(bullets, sentryHulls, (bullet, hull) => {
                 if (!bullet.active || !bullet.isPlayerBullet) return;
-
                 bullet.reset();
                 const sentry = hull.getData('parent');
                 if (sentry && sentry.active) {
@@ -703,44 +774,26 @@
                 }
             });
 
-            this.physics.add.overlap(bullets, player.hull, (hull, bullet) => {
-                if (!bullet.active || bullet.isPlayerBullet) return;
-
-                bullet.reset();
-                player.destroy();
-                document.getElementById('mission-status').style.display = 'block';
-                document.getElementById('mission-status').innerText = 'MISSION FAILED - TANK DESTROYED';
-                document.getElementById('mission-status').style.color = '#e74c3c';
-                document.getElementById('mission-status').style.borderColor = '#e74c3c';
-                game.scene.pause('default');
-            });
-
-            this.physics.add.overlap(player.hull, oil, () => {
-                player.hull.setVelocity(player.hull.body.velocity.x * 0.9, player.hull.body.velocity.y * 0.9);
-            });
 
             this.physics.add.overlap(player.hull, objective, () => {
                 isObjectiveCollected = true;
                 objective.destroy();
                 document.getElementById('mission-status').style.display = 'block';
                 document.getElementById('mission-status').innerText = 'OBJECTIVE SECURED! RETURN TO EXTRACT!';
+                document.getElementById('mission-status').style.color = '#e67e22';
             });
 
             this.physics.add.overlap(player.hull, extractionZone, () => {
                 if (isObjectiveCollected && !isMissionComplete) {
                     isMissionComplete = true;
-                    document.getElementById('mission-status').innerText = 'MISSION ACCOMPLISHED!';
+                    document.getElementById('mission-status').innerText = 'MISSION ACCOMPLISHED! NEXT LEVEL...';
                     document.getElementById('mission-status').style.color = '#2ecc71';
-                    document.getElementById('mission-status').style.borderColor = '#2ecc71';
-                    this.scene.pause();
+
+                    this.time.delayedCall(3000, () => {
+                        startLevel.call(this, currentLevel + 1);
+                    });
                 }
             });
-
-            rayGraphics = this.add.graphics();
-
-            this.cameras.main.startFollow(player.hull);
-
-            createMobileControls.call(this);
         }
 
         function createMobileControls() {
