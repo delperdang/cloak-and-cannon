@@ -662,7 +662,7 @@
             for (let y = 0; y < rows; y++) {
                 this.tileGrid[y] = [];
                 for (let x = 0; x < cols; x++) {
-                    const isSand = Math.random() < 0.3; // 30% chance for sand
+                    const isSand = Math.random() < 0.3;
                     const tileType = isSand ?
                         (Math.random() < 0.5 ? 'tileSand1.png' : 'tileSand2.png') :
                         (Math.random() < 0.5 ? 'tileGrass1.png' : 'tileGrass2.png');
@@ -693,6 +693,13 @@
 
             this.physics.add.collider(bullets, obstacles, (bullet, obstacle) => {
                 if (!bullet.active) return;
+
+                if (obstacle.frame.name.includes('crateWood')) {
+                    obstacle.destroy();
+                    bullet.reset();
+                    return;
+                }
+
                 if (bullet.bounceCount < 1) {
                     bullet.bounceCount++;
                     const body = bullet.body;
@@ -705,6 +712,9 @@
                         obstacle.destroy();
                     }
                 }
+            }, (bullet, obstacle) => {
+                if (obstacle.frame.name === 'treeGreen_small.png') return false;
+                return true;
             });
 
 
