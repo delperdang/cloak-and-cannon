@@ -116,8 +116,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/phaser-navmesh/dist/phaser-navmesh.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/phaser-navmesh@2.2.0/dist/phaser-navmesh.min.js"></script>
+
+
     <script
         src="https://cdn.jsdelivr.net/gh/rexrainbow/phaser3-rex-notes@master/dist/rexvirtualjoystickplugin.min.js"></script>
     <script>
@@ -338,9 +338,8 @@
                     start: true
                 }, {
                     key: 'NavMeshPlugin',
-                    plugin: PhaserNavMeshPlugin,
-                    mapping: 'navMeshPlugin',
-                    start: true
+                    start: true,
+                    mapping: 'navMeshPlugin'
                 }]
             },
             scene: {
@@ -366,6 +365,7 @@
         let rayGraphics;
         let leftStick;
         let rightStick;
+        let debugGraphics;
         let isFireButtonDown = false;
         let manualFireRequested = false;
         let currentLevel = 1;
@@ -535,7 +535,7 @@
 
                 if (isMissionComplete) return;
 
-                if (isObjectiveCollected && this.state !== 'CHASE' && this.state !== 'ALERT') {
+                if (isObjectiveCollected && this.state !== 'CHASE' && this.state !== 'ALERT' && this.state !== 'STUCK') {
                     this.state = 'CHASE';
                 }
 
@@ -550,6 +550,9 @@
                     case 'CHASE':
                         this.chaseBehavior(time, player);
                         break;
+                    case 'STUCK':
+                        this.stuckBehavior(time);
+                        break;
                 }
             }
 
@@ -562,6 +565,18 @@
                 if (dist < 10) {
                     this.patrolIndex = (this.patrolIndex + 1) % this.patrolPath.length;
                 }
+            }
+
+            stuckBehavior(time) {
+                if (time > this.stuckEndTime) {
+                    this.state = this.previousState || 'CHASE';
+                    this.pathUpdateTimer = 0;
+                    this.lastPosCheck = { x: this.hull.x, y: this.hull.y, time: time };
+                    return;
+                }
+
+                const velocity = this.scene.physics.velocityFromRotation(this.hull.rotation, -50);
+                this.hull.setVelocity(velocity.x, velocity.y);
             }
 
             chaseBehavior(time, player) {
@@ -586,29 +601,55 @@
             }
 
             navigateToward(targetPos, time) {
+                if (this.pathUpdateTimer === undefined) this.pathUpdateTimer = 0;
+
+                if (!this.lastPosCheck) {
+                    this.lastPosCheck = { x: this.hull.x, y: this.hull.y, time: time };
+                }
+                if (time > this.lastPosCheck.time + 1000) {
+                    const distMoved = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, this.lastPosCheck.x, this.lastPosCheck.y);
+                    if (distMoved < 10) {
+                        this.previousState = this.state;
+                        this.state = 'STUCK';
+                        this.stuckEndTime = time + 1000;
+                    }
+                    this.lastPosCheck = { x: this.hull.x, y: this.hull.y, time: time };
+                }
+
+
                 if (time > this.pathUpdateTimer || !this.currentNavPath) {
                     this.pathUpdateTimer = time + 500;
                     if (this.scene.navMesh) {
                         this.currentNavPath = this.scene.navMesh.findPath(
                             { x: this.hull.x, y: this.hull.y },
-                            { x: targetPos.x, y: targetPos.y }
+                            { x: targetPos.x, y: targetPos.y },
+                            { shrink: 30 }
                         );
-                        if (this.currentNavPath && this.currentNavPath.length > 0) {
-                            this.currentNavPath.shift();
-                        }
                     }
                 }
+
 
                 let moveTarget = targetPos;
 
                 if (this.currentNavPath && this.currentNavPath.length > 0) {
-                    moveTarget = this.currentNavPath[0];
-                    const distToWaypoint = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, moveTarget.x, moveTarget.y);
+                    const firstPoint = this.currentNavPath[0];
+                    const distToFirst = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, firstPoint.x, firstPoint.y);
 
-                    if (distToWaypoint < 15) {
+                    if (distToFirst < 30) {
                         this.currentNavPath.shift();
-                        if (this.currentNavPath.length > 0) {
-                            moveTarget = this.currentNavPath[0];
+                    }
+
+                    if (this.currentNavPath.length > 0) {
+                        moveTarget = this.currentNavPath[0];
+                    }
+                }
+
+                if (debugGraphics && this.currentNavPath) {
+                    debugGraphics.lineStyle(2, 0xff0000, 1);
+                    if (this.currentNavPath.length > 0) {
+                        debugGraphics.lineBetween(this.hull.x, this.hull.y, this.currentNavPath[0].x, this.currentNavPath[0].y);
+                        for (let i = 0; i < this.currentNavPath.length - 1; i++) {
+                            debugGraphics.lineBetween(this.currentNavPath[i].x, this.currentNavPath[i].y, this.currentNavPath[i + 1].x, this.currentNavPath[i + 1].y);
                         }
                     }
                 }
@@ -683,6 +724,7 @@
 
         function preload() {
             this.load.image('tanks_sheet', ASSET_URL);
+            this.load.scenePlugin('NavMeshPlugin', 'https://cdn.jsdelivr.net/npm/phaser-navmesh@2.2.2/dist/phaser-navmesh.min.js', 'navMeshPlugin', 'navMeshPlugin');
         }
 
         function create() {
@@ -764,6 +806,7 @@
 
 
             rayGraphics = this.add.graphics();
+            debugGraphics = this.add.graphics().setDepth(100);
 
             createMobileControls.call(this);
 
@@ -862,6 +905,7 @@
                         layer.setVisible(false);
                         map.setCollision(1);
                         this.navMesh = this.navMeshPlugin.buildMeshFromTilemap("navMesh", map, [layer], (tile) => tile.index === 0);
+                        if (this.navMesh && debugGraphics) this.navMesh.enableDebug(debugGraphics);
                     } else {
                         console.warn("Retrying with 'tanks' atlas as fallback for tileset...");
 
@@ -1015,6 +1059,7 @@
             sentries.forEach(s => s.update(time, player));
 
             rayGraphics.clear();
+            if (debugGraphics) debugGraphics.clear();
 
             sentries.forEach(s => {
                 if (!s.active) return;
