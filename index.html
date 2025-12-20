@@ -360,6 +360,7 @@
         let leftStick;
         let rightStick;
         let isFireButtonDown = false;
+        let manualFireRequested = false;
         let currentLevel = 1;
 
         class Bullet extends Phaser.Physics.Arcade.Sprite {
@@ -464,17 +465,20 @@
                     this.hull.rotation = Phaser.Math.Angle.RotateTo(this.hull.rotation, angle + Math.PI / 2, 0.1);
                 }
 
-                let targetAngle = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, pointer.worldX, pointer.worldY);
-
+                let targetAngle = this.turret.rotation - Math.PI / 2;
                 let shouldFire = false;
+
                 if (this.scene.sys.game.device.os.desktop) {
+                    targetAngle = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, pointer.worldX, pointer.worldY);
                     shouldFire = pointer.isDown;
                 } else {
-                    shouldFire = isFireButtonDown;
-                }
-
-                if (rightStick && rightStick.force > 0) {
-                    targetAngle = rightStick.rotation;
+                    if (rightStick && rightStick.force > 0) {
+                        targetAngle = rightStick.rotation;
+                    }
+                    if (manualFireRequested) {
+                        shouldFire = true;
+                        manualFireRequested = false;
+                    }
                 }
 
                 this.turret.rotation = targetAngle + Math.PI / 2;
@@ -868,21 +872,15 @@
 
             this.input.addPointer(1);
 
-            const fireBtnRadius = 40;
-            const fireBtn = this.add.circle(width - 80, height - 260, fireBtnRadius, 0xff0000)
-                .setScrollFactor(0)
-                .setDepth(100)
-                .setAlpha(0.6)
-                .setInteractive();
-
-            this.add.text(fireBtn.x, fireBtn.y, 'FIRE', { fontSize: '16px', fontFamily: 'Orbitron' })
-                .setOrigin(0.5)
-                .setScrollFactor(0)
-                .setDepth(101);
-
-            fireBtn.on('pointerdown', () => isFireButtonDown = true);
-            fireBtn.on('pointerup', () => isFireButtonDown = false);
-            fireBtn.on('pointerout', () => isFireButtonDown = false);
+            rightStick.on('pointerdown', () => {
+                rightStick.clickStartTime = Date.now();
+            });
+            rightStick.on('pointerup', () => {
+                const duration = Date.now() - rightStick.clickStartTime;
+                if (duration < 200) {
+                    manualFireRequested = true;
+                }
+            });
         }
 
         function update(time, delta) {
