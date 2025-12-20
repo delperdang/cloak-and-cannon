@@ -452,10 +452,13 @@
                     velocity.y += 1;
                 }
 
+                const terrainMultiplier = this.scene.getTerrainSpeedMultiplier ? this.scene.getTerrainSpeedMultiplier(this.hull.x, this.hull.y) : 1;
+                const currentSpeed = this.speed * terrainMultiplier;
+
                 if (velocity.length() === 0 && leftStick && leftStick.force > 0) {
-                    this.scene.physics.velocityFromRotation(leftStick.rotation, leftStick.force * this.speed, velocity);
+                    this.scene.physics.velocityFromRotation(leftStick.rotation, leftStick.force * currentSpeed, velocity);
                 } else if (velocity.length() > 0) {
-                    velocity.normalize().scale(this.speed);
+                    velocity.normalize().scale(currentSpeed);
                 }
 
                 if (velocity.length() > 0) {
@@ -572,8 +575,11 @@
             }
 
             moveTo(tx, ty) {
+                const terrainMultiplier = this.scene.getTerrainSpeedMultiplier ? this.scene.getTerrainSpeedMultiplier(this.hull.x, this.hull.y) : 1;
+                const currentSpeed = this.speed * terrainMultiplier;
+
                 const angle = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, tx, ty);
-                const velocity = this.scene.physics.velocityFromRotation(angle, this.speed);
+                const velocity = this.scene.physics.velocityFromRotation(angle, currentSpeed);
                 this.hull.setVelocity(velocity.x, velocity.y);
                 this.hull.rotation = Phaser.Math.Angle.RotateTo(this.hull.rotation, angle + Math.PI / 2, 0.1);
                 if (this.state === 'PATROL') this.turret.rotation = this.hull.rotation;
@@ -649,9 +655,31 @@
             this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
             this.cameras.main.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
 
-            for (let y = 0; y < LEVEL_HEIGHT; y += 64) {
-                for (let x = 0; x < LEVEL_WIDTH; x += 64) this.add.image(x + 32, y + 32, 'tanks', 'tileGrass1.png');
+            this.tileGrid = [];
+            const cols = Math.ceil(LEVEL_WIDTH / 64);
+            const rows = Math.ceil(LEVEL_HEIGHT / 64);
+
+            for (let y = 0; y < rows; y++) {
+                this.tileGrid[y] = [];
+                for (let x = 0; x < cols; x++) {
+                    const isSand = Math.random() < 0.3; // 30% chance for sand
+                    const tileType = isSand ?
+                        (Math.random() < 0.5 ? 'tileSand1.png' : 'tileSand2.png') :
+                        (Math.random() < 0.5 ? 'tileGrass1.png' : 'tileGrass2.png');
+
+                    this.add.image(x * 64 + 32, y * 64 + 32, 'tanks', tileType);
+                    this.tileGrid[y][x] = isSand ? 'sand' : 'grass';
+                }
             }
+
+            this.getTerrainSpeedMultiplier = (x, y) => {
+                const col = Math.floor(x / 64);
+                const row = Math.floor(y / 64);
+                if (row >= 0 && row < this.tileGrid.length && col >= 0 && col < this.tileGrid[0].length) {
+                    return this.tileGrid[row][col] === 'sand' ? 0.6 : 1.0;
+                }
+                return 1.0;
+            };
 
             obstacles = this.physics.add.staticGroup();
             hazards = this.physics.add.staticGroup();
