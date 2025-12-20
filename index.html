@@ -705,6 +705,9 @@
             obstacles.clear(true, true);
             hazards.clear(true, true);
             bullets.clear(true, true);
+            if (sentries.length > 0) {
+                sentries.forEach(s => s.destroy());
+            }
             sentryHulls.clear(true, true);
             sentries = [];
             if (objective) objective.destroy();
@@ -804,6 +807,12 @@
                     isMissionComplete = true;
                     player.hull.setVelocity(0);
                     player.hull.body.stop();
+                    sentries.forEach(s => {
+                        if (s.hull && s.hull.body) {
+                            s.hull.setVelocity(0);
+                            s.hull.body.stop();
+                        }
+                    });
                     document.getElementById('mission-status').innerText = 'MISSION ACCOMPLISHED! NEXT LEVEL...';
                     document.getElementById('mission-status').style.color = '#2ecc71';
 
