@@ -24,9 +24,9 @@
         #game-container {
             position: relative;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            border: 2px solid #333;
-            width: 800px;
-            height: 600px;
+            border: none;
+            width: 100%;
+            height: 100vh;
         }
 
         #ui-layer {
@@ -110,6 +110,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/gh/rexrainbow/phaser3-rex-notes@master/dist/rexvirtualjoystickplugin.min.js"></script>
     <script>
         const ASSET_URL = 'https://imagedelivery.net/PwwFoxX145pJ1GHCG1Npzg/2725ffe6-68a3-4f76-e90b-7dd61b44ac00/public';
 
@@ -307,8 +309,12 @@
 
         const config = {
             type: Phaser.AUTO,
-            width: 800,
-            height: 600,
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH,
+                width: window.innerWidth,
+                height: window.innerHeight,
+            },
             parent: 'game-container',
             physics: {
                 default: 'arcade',
@@ -316,6 +322,13 @@
                     debug: false,
                     gravity: { y: 0 }
                 }
+            },
+            plugins: {
+                global: [{
+                    key: 'rexVirtualJoystick',
+                    plugin: rexvirtualjoystickplugin,
+                    start: true
+                }]
             },
             scene: {
                 preload: preload,
@@ -338,6 +351,8 @@
         let isObjectiveCollected = false;
         let isMissionComplete = false;
         let rayGraphics;
+        let leftStick;
+        let rightStick;
 
         class Bullet extends Phaser.Physics.Arcade.Sprite {
             constructor(scene, x, y) {
@@ -428,18 +443,33 @@
                     velocity.y += 1;
                 }
 
-                if (velocity.length() > 0) {
+                if (velocity.length() === 0 && leftStick && leftStick.force > 0) {
+                    this.scene.physics.velocityFromRotation(leftStick.rotation, leftStick.force * this.speed, velocity);
+                } else if (velocity.length() > 0) {
                     velocity.normalize().scale(this.speed);
+                }
+
+                if (velocity.length() > 0) {
                     this.hull.setVelocity(velocity.x, velocity.y);
 
-                    const angle = Phaser.Math.Angle.Between(0, 0, velocity.x, velocity.y);
+                    const angle = velocity.angle();
                     this.hull.rotation = Phaser.Math.Angle.RotateTo(this.hull.rotation, angle + Math.PI / 2, 0.1);
                 }
 
-                const angleToMouse = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, pointer.worldX, pointer.worldY);
-                this.turret.rotation = angleToMouse + Math.PI / 2;
+                let targetAngle = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, pointer.worldX, pointer.worldY);
 
-                if (pointer.isDown && time > this.lastFired) {
+                let shouldFire = pointer.isDown;
+
+                if (rightStick && rightStick.force > 0) {
+                    targetAngle = rightStick.rotation;
+                    if (rightStick.force > 0.5) {
+                        shouldFire = true;
+                    }
+                }
+
+                this.turret.rotation = targetAngle + Math.PI / 2;
+
+                if (shouldFire && time > this.lastFired) {
                     const bullet = bullets.get();
                     if (bullet) {
                         bullet.fire(this.hull.x, this.hull.y, this.turret.rotation, true);
@@ -701,6 +731,39 @@
             });
 
             rayGraphics = this.add.graphics();
+
+            createMobileControls.call(this);
+        }
+
+        function createMobileControls() {
+            if (this.sys.game.device.os.desktop) return;
+
+            const width = this.scale.width;
+            const height = this.scale.height;
+
+            leftStick = this.plugins.get('rexVirtualJoystick').add(this, {
+                x: 150,
+                y: height - 150,
+                radius: 100,
+                base: this.add.circle(0, 0, 100, 0x888888).setAlpha(0.5),
+                thumb: this.add.circle(0, 0, 50, 0xcccccc).setAlpha(0.8),
+                dir: '8dir',
+                forceMin: 16,
+                enable: true
+            });
+
+            rightStick = this.plugins.get('rexVirtualJoystick').add(this, {
+                x: width - 150,
+                y: height - 150,
+                radius: 100,
+                base: this.add.circle(0, 0, 100, 0x888888).setAlpha(0.5),
+                thumb: this.add.circle(0, 0, 50, 0xcccccc).setAlpha(0.8),
+                dir: '8dir',
+                forceMin: 16,
+                enable: true
+            });
+
+            this.input.addPointer(1);
         }
 
         function update(time, delta) {
