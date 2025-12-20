@@ -796,6 +796,8 @@
             this.physics.add.overlap(player.hull, extractionZone, () => {
                 if (isObjectiveCollected && !isMissionComplete) {
                     isMissionComplete = true;
+                    player.hull.setVelocity(0);
+                    player.hull.body.stop();
                     document.getElementById('mission-status').innerText = 'MISSION ACCOMPLISHED! NEXT LEVEL...';
                     document.getElementById('mission-status').style.color = '#2ecc71';
 
