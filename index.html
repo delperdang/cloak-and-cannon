@@ -619,8 +619,14 @@
             cursors.s = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
             cursors.d = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
 
-            for (let y = 0; y < this.scale.height; y += 64) {
-                for (let x = 0; x < this.scale.width; x += 64) this.add.image(x + 32, y + 32, 'tanks', 'tileGrass1.png');
+            const LEVEL_WIDTH = 1600;
+            const LEVEL_HEIGHT = 1200;
+
+            this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
+            this.cameras.main.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
+
+            for (let y = 0; y < LEVEL_HEIGHT; y += 64) {
+                for (let x = 0; x < LEVEL_WIDTH; x += 64) this.add.image(x + 32, y + 32, 'tanks', 'tileGrass1.png');
             }
 
             for (let x = 100; x < 700; x += 64) this.add.image(x, 100, 'tanks', 'tileGrass_roadEast.png');
@@ -732,6 +738,8 @@
 
             rayGraphics = this.add.graphics();
 
+            this.cameras.main.startFollow(player.hull);
+
             createMobileControls.call(this);
         }
 
@@ -741,23 +749,35 @@
             const width = this.scale.width;
             const height = this.scale.height;
 
+            let radius = 100;
+            let baseX1 = 150;
+            let baseX2 = width - 150;
+            let baseY = height - 150;
+
+            if (width < 600) {
+                radius = 60;
+                baseX1 = width * 0.25;
+                baseX2 = width * 0.75;
+                baseY = height - 100;
+            }
+
             leftStick = this.plugins.get('rexVirtualJoystick').add(this, {
-                x: 150,
-                y: height - 150,
-                radius: 100,
-                base: this.add.circle(0, 0, 100, 0x888888).setAlpha(0.5),
-                thumb: this.add.circle(0, 0, 50, 0xcccccc).setAlpha(0.8),
+                x: baseX1,
+                y: baseY,
+                radius: radius,
+                base: this.add.circle(0, 0, radius, 0x888888).setAlpha(0.5).setDepth(100),
+                thumb: this.add.circle(0, 0, radius * 0.5, 0xcccccc).setAlpha(0.8).setDepth(100),
                 dir: '8dir',
                 forceMin: 16,
                 enable: true
             });
 
             rightStick = this.plugins.get('rexVirtualJoystick').add(this, {
-                x: width - 150,
-                y: height - 150,
-                radius: 100,
-                base: this.add.circle(0, 0, 100, 0x888888).setAlpha(0.5),
-                thumb: this.add.circle(0, 0, 50, 0xcccccc).setAlpha(0.8),
+                x: baseX2,
+                y: baseY,
+                radius: radius,
+                base: this.add.circle(0, 0, radius, 0x888888).setAlpha(0.5).setDepth(100),
+                thumb: this.add.circle(0, 0, radius * 0.5, 0xcccccc).setAlpha(0.8).setDepth(100),
                 dir: '8dir',
                 forceMin: 16,
                 enable: true
