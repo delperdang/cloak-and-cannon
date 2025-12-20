@@ -17,7 +17,7 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: #1a1a1a;
+            background-color: #050505;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -667,7 +667,7 @@
                         (Math.random() < 0.5 ? 'tileSand1.png' : 'tileSand2.png') :
                         (Math.random() < 0.5 ? 'tileGrass1.png' : 'tileGrass2.png');
 
-                    this.add.image(x * 64 + 32, y * 64 + 32, 'tanks', tileType);
+                    this.add.image(x * 64 + 32, y * 64 + 32, 'tanks', tileType).setTint(0x777777);
                     this.tileGrid[y][x] = isSand ? 'sand' : 'grass';
                 }
             }
@@ -765,7 +765,7 @@
                 const x = Phaser.Math.Between(100, LEVEL_WIDTH - 100);
                 const y = Phaser.Math.Between(100, LEVEL_HEIGHT - 100);
                 const type = Phaser.Math.RND.pick(['crateMetal.png', 'crateWood.png', 'barrelRust_top.png', 'treeGreen_small.png']);
-                obstacles.create(x, y, 'tanks', type);
+                obstacles.create(x, y, 'tanks', type).setTint(0x777777);
             }
 
             const corners = [
@@ -931,7 +931,7 @@
 
             sentries.forEach(s => {
                 if (!s.active) return;
-                rayGraphics.fillStyle(0xff0000, 0.2);
+                rayGraphics.fillStyle(0xff0000, 0.4);
                 const startAngle = s.turret.rotation - Math.PI / 2 - s.visionAngle / 2;
                 rayGraphics.slice(s.hull.x, s.hull.y, s.visionRange, startAngle, startAngle + s.visionAngle, false);
                 rayGraphics.fillPath();
