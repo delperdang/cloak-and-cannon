@@ -475,6 +475,16 @@
                     if (bullet) {
                         bullet.fire(this.hull.x, this.hull.y, this.turret.rotation, true);
                         this.lastFired = time + 500;
+
+                        sentries.forEach(sentry => {
+                            if (sentry.active) {
+                                const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, sentry.hull.x, sentry.hull.y);
+                                if (dist < 600) {
+                                    sentry.state = 'CHASE';
+                                    sentry.alertUI();
+                                }
+                            }
+                        });
                     }
                 }
             }
@@ -700,7 +710,7 @@
             for (let i = 0; i < 30 + (levelNum * 5); i++) {
                 const x = Phaser.Math.Between(100, LEVEL_WIDTH - 100);
                 const y = Phaser.Math.Between(100, LEVEL_HEIGHT - 100);
-                const type = Phaser.Math.RND.pick(['crateMetal.png', 'crateWood.png', 'treeGreen_large.png', 'barricadeWood.png']);
+                const type = Phaser.Math.RND.pick(['crateMetal.png', 'crateWood.png', 'barrelRust_top.png', 'treeGreen_small.png']);
                 obstacles.create(x, y, 'tanks', type);
             }
 
