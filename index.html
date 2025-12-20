@@ -116,6 +116,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser-navmesh/dist/phaser-navmesh.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser-navmesh@2.2.0/dist/phaser-navmesh.min.js"></script>
     <script
         src="https://cdn.jsdelivr.net/gh/rexrainbow/phaser3-rex-notes@master/dist/rexvirtualjoystickplugin.min.js"></script>
     <script>
@@ -334,6 +336,11 @@
                     key: 'rexVirtualJoystick',
                     plugin: rexvirtualjoystickplugin,
                     start: true
+                }, {
+                    key: 'NavMeshPlugin',
+                    plugin: PhaserNavMeshPlugin,
+                    mapping: 'navMeshPlugin',
+                    start: true
                 }]
             },
             scene: {
@@ -509,14 +516,17 @@
         class SentryTank extends Tank {
             constructor(scene, path) {
                 super(scene, path[0].x, path[0].y, 'tankBody_darkLarge_outline.png', 'tankDark_barrel1_outline.png');
-                this.path = path;
-                this.pathIndex = 0;
+                this.patrolPath = path;
+                this.patrolIndex = 0;
                 this.speed = 80;
                 this.visionRange = 250;
                 this.visionAngle = Phaser.Math.DegToRad(45);
                 this.state = 'PATROL';
                 this.alertTimer = 0;
                 this.hull.setData('parent', this);
+                this.currentNavPath = null;
+                this.pathUpdateTimer = 0;
+                this.currentTargetPoint = null;
             }
 
             update(time, player) {
@@ -531,7 +541,7 @@
 
                 switch (this.state) {
                     case 'PATROL':
-                        this.patrolBehavior();
+                        this.patrolBehavior(time);
                         if (this.canSeePlayer(player)) {
                             this.state = 'CHASE';
                             this.alertUI();
@@ -543,20 +553,21 @@
                 }
             }
 
-            patrolBehavior() {
-                const target = this.path[this.pathIndex];
-                const distance = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, target.x, target.y);
+            patrolBehavior(time) {
+                const target = this.patrolPath[this.patrolIndex];
 
-                if (distance < 5) {
-                    this.pathIndex = (this.pathIndex + 1) % this.path.length;
-                } else {
-                    this.moveTo(target.x, target.y);
+                this.navigateToward(target, time);
+
+                const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, target.x, target.y);
+                if (dist < 10) {
+                    this.patrolIndex = (this.patrolIndex + 1) % this.patrolPath.length;
                 }
             }
 
             chaseBehavior(time, player) {
                 if (!player.active) return;
-                this.moveTo(player.hull.x, player.hull.y);
+
+                this.navigateToward({ x: player.hull.x, y: player.hull.y }, time);
 
                 const angle = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, player.hull.x, player.hull.y);
                 this.turret.rotation = angle + Math.PI / 2;
@@ -574,6 +585,37 @@
                 }
             }
 
+            navigateToward(targetPos, time) {
+                if (time > this.pathUpdateTimer || !this.currentNavPath) {
+                    this.pathUpdateTimer = time + 500;
+                    if (this.scene.navMesh) {
+                        this.currentNavPath = this.scene.navMesh.findPath(
+                            { x: this.hull.x, y: this.hull.y },
+                            { x: targetPos.x, y: targetPos.y }
+                        );
+                        if (this.currentNavPath && this.currentNavPath.length > 0) {
+                            this.currentNavPath.shift();
+                        }
+                    }
+                }
+
+                let moveTarget = targetPos;
+
+                if (this.currentNavPath && this.currentNavPath.length > 0) {
+                    moveTarget = this.currentNavPath[0];
+                    const distToWaypoint = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, moveTarget.x, moveTarget.y);
+
+                    if (distToWaypoint < 15) {
+                        this.currentNavPath.shift();
+                        if (this.currentNavPath.length > 0) {
+                            moveTarget = this.currentNavPath[0];
+                        }
+                    }
+                }
+
+                this.moveTo(moveTarget.x, moveTarget.y);
+            }
+
             moveTo(tx, ty) {
                 const terrainMultiplier = this.scene.getTerrainSpeedMultiplier ? this.scene.getTerrainSpeedMultiplier(this.hull.x, this.hull.y) : 1;
                 const currentSpeed = this.speed * terrainMultiplier;
@@ -581,7 +623,10 @@
                 const angle = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, tx, ty);
                 const velocity = this.scene.physics.velocityFromRotation(angle, currentSpeed);
                 this.hull.setVelocity(velocity.x, velocity.y);
-                this.hull.rotation = Phaser.Math.Angle.RotateTo(this.hull.rotation, angle + Math.PI / 2, 0.1);
+
+                const desiredAngle = angle + Math.PI / 2;
+                this.hull.rotation = Phaser.Math.Angle.RotateTo(this.hull.rotation, desiredAngle, 0.1);
+
                 if (this.state === 'PATROL') this.turret.rotation = this.hull.rotation;
             }
 
@@ -598,7 +643,7 @@
                     const line = new Phaser.Geom.Line(this.hull.x, this.hull.y, player.hull.x, player.hull.y);
                     let blocked = false;
                     obstacles.getChildren().forEach(obs => {
-                        if (Phaser.Geom.Intersects.LineToRectangle(line, obs.getBounds())) blocked = true;
+                        if (Phaser.Geom.Intersects.LineToRectangle(line, obs.body)) blocked = true;
                     });
                     return !blocked;
                 }
@@ -761,49 +806,91 @@
             const LEVEL_WIDTH = 1600;
             const LEVEL_HEIGHT = 1200;
 
-            for (let i = 0; i < 30 + (levelNum * 5); i++) {
-                const x = Phaser.Math.Between(100, LEVEL_WIDTH - 100);
-                const y = Phaser.Math.Between(100, LEVEL_HEIGHT - 100);
-                const type = Phaser.Math.RND.pick(['crateMetal.png', 'crateWood.png', 'barrelRust_top.png', 'treeGreen_small.png']);
-                obstacles.create(x, y, 'tanks', type).setTint(0x777777);
+            const TILE_SIZE = 64;
+            const cols = Math.ceil(LEVEL_WIDTH / TILE_SIZE);
+            const rows = Math.ceil(LEVEL_HEIGHT / TILE_SIZE);
+            const grid = Array(rows).fill().map(() => Array(cols).fill(0));
+
+            for (let y = 0; y < rows; y++) {
+                grid[y][0] = 1;
+                grid[y][cols - 1] = 1;
+            }
+            for (let x = 0; x < cols; x++) {
+                grid[0][x] = 1;
+                grid[rows - 1][x] = 1;
             }
 
-            const corners = [
-                { x: 200, y: 200 },
-                { x: LEVEL_WIDTH - 200, y: 200 },
-                { x: 200, y: LEVEL_HEIGHT - 200 },
-                { x: LEVEL_WIDTH - 200, y: LEVEL_HEIGHT - 200 }
-            ];
-            const startIdx = Phaser.Math.Between(0, 3);
-            const startPos = corners[startIdx];
+            const obstacleCount = 30 + (levelNum * 5);
+            let obstaclesPlaced = 0;
+            while (obstaclesPlaced < obstacleCount) {
+                const c = Phaser.Math.Between(1, cols - 2);
+                const r = Phaser.Math.Between(1, rows - 2);
+                if (grid[r][c] === 0) {
+                    grid[r][c] = 1;
+                    const x = c * TILE_SIZE + TILE_SIZE / 2;
+                    const y = r * TILE_SIZE + TILE_SIZE / 2;
+                    const type = Phaser.Math.RND.pick(['crateMetal.png', 'crateWood.png', 'barrelRust_top.png', 'treeGreen_small.png']);
+                    obstacles.create(x, y, 'tanks', type).setTint(0x777777);
+                    obstaclesPlaced++;
+                }
+            }
 
-            player = new PlayerTank(this, startPos.x, startPos.y);
+            const findSpawn = () => {
+                let attempts = 0;
+                while (attempts < 1000) {
+                    const c = Phaser.Math.Between(1, cols - 2);
+                    const r = Phaser.Math.Between(1, rows - 2);
+                    if (grid[r][c] === 0) {
+                        return { x: c * TILE_SIZE + TILE_SIZE / 2, y: r * TILE_SIZE + TILE_SIZE / 2, c, r };
+                    }
+                    attempts++;
+                }
+                return { x: 200, y: 200 };
+            };
+
+            const pSpawn = findSpawn();
+            player = new PlayerTank(this, pSpawn.x, pSpawn.y);
             this.cameras.main.startFollow(player.hull);
 
-            let objX, objY;
-            do {
-                objX = Phaser.Math.Between(200, LEVEL_WIDTH - 200);
-                objY = Phaser.Math.Between(200, LEVEL_HEIGHT - 200);
-            } while (Phaser.Math.Distance.Between(startPos.x, startPos.y, objX, objY) < 800);
 
-            objective = this.physics.add.image(objX, objY, 'tanks', 'specialBarrel1_outline.png');
+            try {
+                if (this.navMeshPlugin) {
+                    const map = this.make.tilemap({ data: grid, tileWidth: TILE_SIZE, tileHeight: TILE_SIZE });
+                    const tileset = map.addTilesetImage('tanks_sheet');
+                    if (tileset) {
+                        const layer = map.createLayer(0, tileset, 0, 0);
+                        layer.setVisible(false);
+                        map.setCollision(1);
+                        this.navMesh = this.navMeshPlugin.buildMeshFromTilemap("navMesh", map, [layer], (tile) => tile.index === 0);
+                    } else {
+                        console.warn("Retrying with 'tanks' atlas as fallback for tileset...");
 
-            extractionZone = this.add.rectangle(startPos.x, startPos.y, 120, 120, 0x00ff00, 0.2);
+                    }
+                }
+            } catch (e) {
+                console.error("NavMesh setup failed:", e);
+                this.navMesh = null;
+            }
+
+            let oSpawn = findSpawn();
+            while (Phaser.Math.Distance.Between(pSpawn.x, pSpawn.y, oSpawn.x, oSpawn.y) < 800) {
+                oSpawn = findSpawn();
+            }
+            objective = this.physics.add.image(oSpawn.x, oSpawn.y, 'tanks', 'specialBarrel1_outline.png');
+
+            extractionZone = this.add.rectangle(pSpawn.x, pSpawn.y, 120, 120, 0x00ff00, 0.2);
             this.physics.add.existing(extractionZone, true);
 
             const enemyCount = 2 + Math.floor(levelNum * 1.5);
             for (let i = 0; i < enemyCount; i++) {
-                let ex, ey;
-                do {
-                    ex = Phaser.Math.Between(100, LEVEL_WIDTH - 100);
-                    ey = Phaser.Math.Between(100, LEVEL_HEIGHT - 100);
-                } while (Phaser.Math.Distance.Between(startPos.x, startPos.y, ex, ey) < 500);
+                let eSpawn = findSpawn();
+                while (Phaser.Math.Distance.Between(pSpawn.x, pSpawn.y, eSpawn.x, eSpawn.y) < 500) {
+                    eSpawn = findSpawn();
+                }
 
-                const path = [{ x: ex, y: ey }];
-                path.push({
-                    x: Phaser.Math.Clamp(ex + Phaser.Math.Between(-400, 400), 100, LEVEL_WIDTH - 100),
-                    y: Phaser.Math.Clamp(ey + Phaser.Math.Between(-400, 400), 100, LEVEL_HEIGHT - 100)
-                });
+                const path = [{ x: eSpawn.x, y: eSpawn.y }];
+                let p2 = findSpawn();
+                path.push({ x: p2.x, y: p2.y });
 
                 const s = new SentryTank(this, path);
                 sentries.push(s);
