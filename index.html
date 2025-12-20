@@ -80,16 +80,138 @@
 
         #mission-status {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(10, 15, 20, 0.85);
-            padding: 10px;
-            border: 1px solid #e67e22;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #e67e22;
+            padding: 20px;
             color: #e67e22;
-            font-size: 14px;
+            font-size: 24px;
             font-weight: bold;
             display: none;
+            text-align: center;
+            z-index: 1000;
             pointer-events: none;
+        }
+
+        #powerup-selection-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .powerup-card {
+            background: rgba(20, 20, 20, 0.9);
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px;
+            width: 300px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            color: #ecf0f1;
+        }
+
+        .powerup-card:hover {
+            border-color: #3498db;
+            background: rgba(40, 40, 60, 0.9);
+            transform: translateY(-2px);
+        }
+
+        .powerup-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+
+        .powerup-type-cannon {
+            color: #e74c3c;
+        }
+
+        .powerup-type-cloak {
+            color: #9b59b6;
+        }
+
+        .powerup-desc {
+            font-size: 14px;
+            color: #bdc3c7;
+            line-height: 1.4;
+        }
+
+        #powerup-hud {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            pointer-events: none;
+            z-index: 500;
+        }
+
+        .powerup-slot {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #555;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            color: #7f8c8d;
+            position: relative;
+        }
+
+        .powerup-slot.filled {
+            border-color: #bdc3c7;
+            color: #ecf0f1;
+        }
+
+        .powerup-slot.active {
+            border-color: #f1c40f;
+            box-shadow: 0 0 10px #f1c40f;
+        }
+
+        .slot-cannon {
+            border-bottom: 2px solid #e74c3c;
+        }
+
+        .slot-cloak {
+            border-bottom: 2px solid #9b59b6;
+        }
+
+        .slot-key {
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #7f8c8d;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .active-timer-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background-color: #f1c40f;
+            width: 0%;
+            transition: width 0.1s linear;
         }
     </style>
 </head>
@@ -112,7 +234,35 @@
                 <span>Jules</span> <span class="crew-role">LDR</span> <span class="status-ok">ACTIVE</span>
             </div>
         </div>
-        <div id="mission-status">OBJECTIVE SECURED! RETURN TO EXTRACT!</div>
+        <div id="mission-status"></div>
+    </div>
+
+    <div id="powerup-selection-overlay">
+        <h2 style="color: #fff; margin-bottom: 30px;">SELECT REWARD</h2>
+        <div style="display: flex; gap: 20px;">
+            <div id="option-1" class="powerup-card" onclick="selectPowerup(0)">
+                <div class="powerup-title">OPTION 1</div>
+                <div class="powerup-desc">...</div>
+            </div>
+            <div id="option-2" class="powerup-card" onclick="selectPowerup(1)">
+                <div class="powerup-title">OPTION 2</div>
+                <div class="powerup-desc">...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="powerup-hud">
+        <div class="powerup-slot slot-cannon" id="slot-0"><span class="slot-key">1</span></div>
+        <div class="powerup-slot slot-cannon" id="slot-1"><span class="slot-key">2</span></div>
+        <div class="powerup-slot slot-cannon" id="slot-2"><span class="slot-key">3</span></div>
+        <div class="powerup-slot slot-cannon" id="slot-3"><span class="slot-key">4</span></div>
+        <div class="powerup-slot slot-cannon" id="slot-4"><span class="slot-key">5</span></div>
+        <div class="powerup-slot slot-cloak" id="slot-5"><span class="slot-key">6</span></div>
+        <div class="powerup-slot slot-cloak" id="slot-6"><span class="slot-key">7</span></div>
+        <div class="powerup-slot slot-cloak" id="slot-7"><span class="slot-key">8</span></div>
+        <div class="powerup-slot slot-cloak" id="slot-8"><span class="slot-key">9</span></div>
+        <div class="powerup-slot slot-cloak" id="slot-9"><span class="slot-key">0</span></div>
+    </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
@@ -120,6 +270,7 @@
 
     <script
         src="https://cdn.jsdelivr.net/gh/rexrainbow/phaser3-rex-notes@master/dist/rexvirtualjoystickplugin.min.js"></script>
+
     <script>
         const ASSET_URL = 'https://imagedelivery.net/PwwFoxX145pJ1GHCG1Npzg/2725ffe6-68a3-4f76-e90b-7dd61b44ac00/public';
 
@@ -336,12 +487,9 @@
                     key: 'rexVirtualJoystick',
                     plugin: rexvirtualjoystickplugin,
                     start: true
-                }, {
-                    key: 'NavMeshPlugin',
-                    start: true,
-                    mapping: 'navMeshPlugin'
-                }]
+                }],
             },
+
             scene: {
                 preload: preload,
                 create: create,
@@ -368,6 +516,39 @@
         let debugGraphics;
         let isFireButtonDown = false;
         let manualFireRequested = false;
+        const POWERUPS = {
+            CANNON: {
+                RAPID_FIRE: { id: 'RAPID_FIRE', name: 'Rapid Fire', desc: 'Significantly increases fire rate.', type: 'CANNON' },
+                MULTI_SHOT: { id: 'MULTI_SHOT', name: 'Multi-Shot', desc: 'Fires 3 rounds at once in a spread.', type: 'CANNON' },
+                POWER_SHOT: { id: 'POWER_SHOT', name: 'Power Shot', desc: 'Larger rounds that ignore obstacles.', type: 'CANNON' },
+                HOMING_SHOT: {
+                    id: 'HOMING_SHOT', name: 'Homing Shot', desc: 'Projectiles track the nearest enemy.', type: 'CANNON'
+                },
+                FLAME_THROWER: {
+                    id: 'FLAME_THROWER', name: 'Flame Thrower', desc: 'Short range fire that destroys enemy bullets.',
+                    type: 'CANNON'
+                }
+            },
+            CLOAK: {
+                SCRAMBLE: {
+                    id: 'SCRAMBLE', name: 'Scramble', desc: 'Enemies drive erratically and cannot target you.', type:
+                        'CLOAK'
+                },
+                INVISIBLE: { id: 'INVISIBLE', name: 'Invisible', desc: 'Become nearly invisible and undetectable.', type: 'CLOAK' },
+                DECOY: { id: 'DECOY', name: 'Decoy', desc: 'Deploys a noisy decoy to attract enemies.', type: 'CLOAK' },
+                SHIELD: { id: 'SHIELD', name: 'Shield', desc: 'Absorbs one hit from any source.', type: 'CLOAK' },
+                DISGUISE: { id: 'DISGUISE', name: 'Disguise', desc: 'Look like an enemy tank. Undetectable.', type: 'CLOAK' }
+            }
+        };
+
+        const CANNON_KEYS = Object.keys(POWERUPS.CANNON);
+        const CLOAK_KEYS = Object.keys(POWERUPS.CLOAK);
+
+        let activePowerup = null;
+        let inventory = Array(10).fill(null);
+        let currentSelectionOptions = [];
+        let isPowerupSelectionActive = false;
+
         let currentLevel = 1;
 
         class Bullet extends Phaser.Physics.Arcade.Sprite {
@@ -375,72 +556,105 @@
                 super(scene, x, y, 'tanks', 'bulletBlue3.png');
                 this.bounceCount = 0;
                 this.isPlayerBullet = false;
+                this.isPowerShot = false;
+                this.isHoming = false;
+                this.isFlame = false;
             }
 
-            fire(x, y, rotation, isPlayerBullet) {
+            fire(x, y, rotation, isPlayerBullet, options = {}) {
                 this.body.reset(x, y);
                 this.setActive(true);
                 this.setVisible(true);
                 this.setRotation(rotation);
                 this.isPlayerBullet = isPlayerBullet;
+                this.isPowerShot = options.powerShot || false;
+                this.isHoming = options.homing || false;
+                this.isFlame = options.flame || false;
 
-                this.setFrame(isPlayerBullet ? 'bulletBlue3.png' : 'bulletRed3.png');
+                let tex = isPlayerBullet ? 'bulletBlue3.png' : 'bulletRed3.png';
+                if (this.isFlame) tex = 'shotOrange.png';
+                if (this.isPowerShot) tex = 'bulletBlue2_outline.png';
+
+                this.setFrame(tex);
+
+                let speed = 400;
+                if (this.isPowerShot) speed = 600;
+                if (this.isFlame) speed = 300;
 
                 const vec = new Phaser.Math.Vector2();
                 vec.setToPolar(rotation - Math.PI / 2, 40);
                 this.setPosition(x + vec.x, y + vec.y);
 
-                this.scene.physics.velocityFromRotation(rotation - Math.PI / 2, 400, this.body.velocity);
+                this.scene.physics.velocityFromRotation(rotation - Math.PI / 2, speed, this.body.velocity);
                 this.bounceCount = 0;
+
+                if (this.isFlame) {
+                    this.scene.time.delayedCall(500, () => {
+                        if (this.active) this.reset();
+                    });
+                }
             }
 
-            reset() {
-                this.setActive(false);
-                this.setVisible(false);
-                this.body.stop();
+            update(time, delta) {
+                if (this.isHoming && this.active && this.isPlayerBullet) {
+                    let nearest = null;
+                    let minDist = 10000;
+                    sentries.forEach(s => {
+                        if (s.active) {
+                            const d = Phaser.Math.Distance.Between(this.x, this.y, s.hull.x, s.hull.y);
+                            if (d < minDist) { minDist = d; nearest = s; }
+                        }
+                    }); if (nearest && minDist < 400) {
+                        const
+                            angleArg = Phaser.Math.Angle.Between(this.x, this.y, nearest.hull.x, nearest.hull.y); const
+                                currentAngle = this.body.velocity.angle(); const newAngle = Phaser.Math.Angle.RotateTo(currentAngle, angleArg,
+                                    0.05); this.scene.physics.velocityFromRotation(newAngle, 400, this.body.velocity); this.rotation = newAngle +
+                                        Math.PI / 2;
+                    }
+                }
+            } reset() {
+                this.setActive(false); this.setVisible(false); this.body.stop();
+                this.isPowerShot = false; this.isHoming = false; this.isFlame = false;
             }
-        }
-
-        class Tank {
-            constructor(scene, x, y, textureBody, textureBarrel) {
-                this.scene = scene;
-                this.x = x;
-                this.y = y;
-
-                this.hull = scene.physics.add.sprite(x, y, 'tanks', textureBody);
-                this.hull.setDrag(100);
-                this.hull.setAngularDrag(100);
-                this.hull.setMaxVelocity(200);
-                this.hull.setCollideWorldBounds(true);
-
-                this.turret = scene.add.sprite(x, y, 'tanks', textureBarrel);
-                this.turret.setOrigin(0.5, 0.7);
-
-                this.lastFired = 0;
-                this.active = true;
-            }
-
-            update() {
+        } class Tank {
+            constructor(scene, x, y,
+                textureBody, textureBarrel) {
+                this.scene = scene; this.x = x; this.y = y; this.hull = scene.physics.add.sprite(x,
+                    y, 'tanks', textureBody); this.hull.setDrag(100); this.hull.setAngularDrag(100); this.hull.setMaxVelocity(200);
+                this.hull.setCollideWorldBounds(true); this.turret = scene.add.sprite(x, y, 'tanks', textureBarrel);
+                this.turret.setOrigin(0.5, 0.7); this.lastFired = 0; this.active = true;
+            } update() {
                 if (!this.active) return;
-                this.turret.x = this.hull.x;
-                this.turret.y = this.hull.y;
-            }
-
-            destroy() {
-                this.hull.destroy();
-                this.turret.destroy();
+                this.turret.x = this.hull.x; this.turret.y = this.hull.y;
+            } destroy() {
+                this.hull.destroy(); this.turret.destroy();
                 this.active = false;
             }
-        }
-
-        class PlayerTank extends Tank {
+        } class PlayerTank extends Tank {
             constructor(scene, x, y) {
-                super(scene, x, y, 'tankBody_blue_outline.png', 'tankBlue_barrel1_outline.png');
-                this.speed = 150;
-            }
+                super(scene, x,
+                    y, 'tankBody_blue_outline.png', 'tankBlue_barrel1_outline.png'); this.speed = 150;
+            } update(time, cursors,
+                pointer) {
+                if (!this.active) return; if (activePowerup && time > activePowerup.endTime) {
+                    activePowerup = null;
+                    updateHUD();
 
-            update(time, cursors, pointer) {
-                if (!this.active) return;
+                    this.hull.setAlpha(1);
+                    this.turret.setAlpha(1);
+                    this.isDisguised = false;
+                    this.hull.setTexture('tanks', 'tankBody_blue_outline.png');
+                    this.turret.setTexture('tanks', 'tankBlue_barrel1_outline.png');
+                    this.isShielded = false;
+                    if (this.shieldInfo) this.shieldInfo.clear();
+                }
+
+                if (this.isShielded && this.shieldInfo) {
+                    this.shieldInfo.clear();
+                    this.shieldInfo.lineStyle(2, 0x00ffff, 1);
+                    this.shieldInfo.strokeCircle(this.hull.x, this.hull.y, 40);
+                }
+
                 super.update();
 
                 this.hull.setVelocity(0);
@@ -459,7 +673,8 @@
                     velocity.y += 1;
                 }
 
-                const terrainMultiplier = this.scene.getTerrainSpeedMultiplier ? this.scene.getTerrainSpeedMultiplier(this.hull.x, this.hull.y) : 1;
+                const terrainMultiplier = this.scene.getTerrainSpeedMultiplier ?
+                    this.scene.getTerrainSpeedMultiplier(this.hull.x, this.hull.y) : 1;
                 const currentSpeed = this.speed * terrainMultiplier;
 
                 if (velocity.length() === 0 && leftStick && leftStick.force > 0) {
@@ -494,21 +709,59 @@
                 this.turret.rotation = targetAngle + Math.PI / 2;
 
                 if (shouldFire && time > this.lastFired) {
-                    const bullet = bullets.get();
-                    if (bullet) {
-                        bullet.fire(this.hull.x, this.hull.y, this.turret.rotation, true);
-                        this.lastFired = time + 500;
+                    let fireDelay = 500;
+                    let isRapid = false;
+                    let isMulti = false;
+                    let isPower = false;
+                    let isHoming = false;
+                    let isFlame = false;
 
-                        sentries.forEach(sentry => {
-                            if (sentry.active) {
-                                const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, sentry.hull.x, sentry.hull.y);
-                                if (dist < 600) {
-                                    sentry.state = 'CHASE';
-                                    sentry.alertUI();
-                                }
-                            }
-                        });
+                    if (activePowerup && activePowerup.type.type === 'CANNON') {
+                        const pid = activePowerup.type.id;
+                        if (pid === 'RAPID_FIRE') { isRapid = true; fireDelay = 150; }
+                        if (pid === 'MULTI_SHOT') isMulti = true;
+                        if (pid === 'POWER_SHOT') isPower = true;
+                        if (pid === 'HOMING_SHOT') isHoming = true;
+                        if (pid === 'FLAME_THROWER') { isFlame = true; fireDelay = 100; }
+                    } else if (activePowerup && activePowerup.type.type === 'CLOAK') {
+                        activePowerup.endTime = time;
+                        activePowerup = null;
+                        updateHUD();
+                        this.hull.setAlpha(1);
+                        this.turret.setAlpha(1);
+                        this.isDisguised = false;
+                        this.hull.setTexture('tanks', 'tankBody_blue_outline.png');
+                        this.turret.setTexture('tanks', 'tankBlue_barrel1_outline.png');
+                        this.isShielded = false;
+                        if (this.shieldInfo) this.shieldInfo.clear();
                     }
+
+                    const bulletOptions = { powerShot: isPower, homing: isHoming, flame: isFlame };
+
+                    if (isMulti) {
+                        const offsets = [-0.2, 0, 0.2];
+                        offsets.forEach(off => {
+                            const b = bullets.get();
+                            if (b) b.fire(this.hull.x, this.hull.y, this.turret.rotation + off, true, bulletOptions);
+                        });
+                    } else {
+                        const bullet = bullets.get();
+                        if (bullet) {
+                            bullet.fire(this.hull.x, this.hull.y, this.turret.rotation, true, bulletOptions);
+                        }
+                    }
+
+                    this.lastFired = time + fireDelay;
+
+                    sentries.forEach(sentry => {
+                        if (sentry.active) {
+                            const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, sentry.hull.x, sentry.hull.y);
+                            if (dist < 600) {
+                                sentry.state = 'CHASE'; sentry.lastKnownPosition = { x: this.hull.x, y: this.hull.y };
+                                sentry.alertUI();
+                            }
+                        }
+                    });
                 }
             }
         }
@@ -523,10 +776,9 @@
                 this.visionAngle = Phaser.Math.DegToRad(45);
                 this.state = 'PATROL';
                 this.alertTimer = 0;
+                this.lastKnownPosition = null;
                 this.hull.setData('parent', this);
-                this.currentNavPath = null;
-                this.pathUpdateTimer = 0;
-                this.currentTargetPoint = null;
+                this.rayLength = 100;
             }
 
             update(time, player) {
@@ -544,6 +796,7 @@
                         this.patrolBehavior(time);
                         if (this.canSeePlayer(player)) {
                             this.state = 'CHASE';
+                            this.lastKnownPosition = { x: player.hull.x, y: player.hull.y };
                             this.alertUI();
                         }
                         break;
@@ -562,7 +815,7 @@
                 this.navigateToward(target, time);
 
                 const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, target.x, target.y);
-                if (dist < 10) {
+                if (dist < 20) {
                     this.patrolIndex = (this.patrolIndex + 1) % this.patrolPath.length;
                 }
             }
@@ -570,28 +823,92 @@
             stuckBehavior(time) {
                 if (time > this.stuckEndTime) {
                     this.state = this.previousState || 'CHASE';
-                    this.pathUpdateTimer = 0;
                     this.lastPosCheck = { x: this.hull.x, y: this.hull.y, time: time };
                     return;
                 }
 
                 const velocity = this.scene.physics.velocityFromRotation(this.hull.rotation, -50);
                 this.hull.setVelocity(velocity.x, velocity.y);
+                this.hull.rotation += 0.05;
             }
 
             chaseBehavior(time, player) {
-                if (!player.active) return;
+                if (activePowerup && activePowerup.type.id === 'SCRAMBLE') {
+                    if (Math.random() < 0.05) {
+                        const randAngle = Math.random() * Math.PI * 2;
+                        const velocity = this.scene.physics.velocityFromRotation(randAngle, this.speed);
+                        this.hull.setVelocity(velocity.x, velocity.y);
+                        this.hull.rotation = randAngle + Math.PI / 2;
+                        this.turret.rotation = Math.random() * Math.PI * 2;
+                    }
+                    if (time > this.lastFired && Math.random() < 0.1) {
+                        const bullet = bullets.get();
+                        if (bullet) {
+                            bullet.fire(this.hull.x, this.hull.y, this.turret.rotation, false);
+                            this.lastFired = time + 500;
+                        }
+                    }
+                    return;
+                }
 
-                this.navigateToward({ x: player.hull.x, y: player.hull.y }, time);
+                if (isObjectiveCollected) {
+                    this.lastKnownPosition = { x: player.hull.x, y: player.hull.y };
+                }
 
-                const angle = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, player.hull.x, player.hull.y);
+                let target = player.hull;
+
+                if (this.scene.decoys && this.scene.decoys.length > 0) {
+                    let nearestDecoy = null;
+                    let minDist = 10000;
+                    this.scene.decoys.forEach(d => {
+                        if (d.active) {
+                            const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, d.x, d.y);
+                            if (dist < minDist) {
+                                minDist = dist;
+                                nearestDecoy = d;
+                            }
+                        }
+                    });
+
+                    if (nearestDecoy && minDist < this.visionRange * 1.5) {
+                        target = nearestDecoy;
+                    }
+                }
+
+                if (!player.active && !target.active) return;
+
+                if (target === player.hull) {
+                    if (this.canSeePlayer(player)) {
+                        this.lastKnownPosition = { x: player.hull.x, y: player.hull.y };
+                    } else {
+                        if (this.lastKnownPosition) {
+                            const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, this.lastKnownPosition.x, this.lastKnownPosition.y);
+                            if (dist < 50) {
+                                this.lastKnownPosition = null;
+                                this.state = 'PATROL';
+                                return;
+                            }
+                            this.navigateToward(this.lastKnownPosition, time);
+                            const angle = this.hull.body.velocity.angle();
+                            this.turret.rotation = Phaser.Math.Angle.RotateTo(this.turret.rotation, angle + Math.PI / 2, 0.1);
+                            return;
+                        } else {
+                            this.state = 'PATROL';
+                            return;
+                        }
+                    }
+                }
+
+                this.navigateToward({ x: target.x, y: target.y }, time);
+
+                const angle = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, target.x, target.y);
                 this.turret.rotation = angle + Math.PI / 2;
 
                 const facingAngle = this.hull.rotation - Math.PI / 2;
                 const turretAngle = this.turret.rotation - Math.PI / 2;
                 const diff = Phaser.Math.Angle.Wrap(angle - turretAngle);
 
-                if (Math.abs(diff) < 0.2 && time > this.lastFired && this.canSeePlayer(player)) {
+                if (Math.abs(diff) < 0.2 && time > this.lastFired) {
                     const bullet = bullets.get();
                     if (bullet) {
                         bullet.fire(this.hull.x, this.hull.y, this.turret.rotation, false);
@@ -601,8 +918,6 @@
             }
 
             navigateToward(targetPos, time) {
-                if (this.pathUpdateTimer === undefined) this.pathUpdateTimer = 0;
-
                 if (!this.lastPosCheck) {
                     this.lastPosCheck = { x: this.hull.x, y: this.hull.y, time: time };
                 }
@@ -616,63 +931,68 @@
                     this.lastPosCheck = { x: this.hull.x, y: this.hull.y, time: time };
                 }
 
+                const angleToTarget = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, targetPos.x, targetPos.y);
+                let moveAngle = angleToTarget;
 
-                if (time > this.pathUpdateTimer || !this.currentNavPath) {
-                    this.pathUpdateTimer = time + 500;
-                    if (this.scene.navMesh) {
-                        this.currentNavPath = this.scene.navMesh.findPath(
-                            { x: this.hull.x, y: this.hull.y },
-                            { x: targetPos.x, y: targetPos.y },
-                            { shrink: 30 }
-                        );
+                const startPoint = new Phaser.Math.Vector2(this.hull.x, this.hull.y);
+                const forwardVec = new Phaser.Math.Vector2().setToPolar(this.hull.rotation - Math.PI / 2, this.rayLength);
+                const forwardRay = new Phaser.Geom.Line(startPoint.x, startPoint.y, startPoint.x + forwardVec.x, startPoint.y + forwardVec.y);
+
+                let blocked = false;
+                const obs = obstacles.getChildren();
+
+                for (let i = 0; i < obs.length; i++) {
+                    if (Phaser.Geom.Intersects.LineToRectangle(forwardRay, obs[i].body)) {
+                        blocked = true;
+                        break;
                     }
                 }
 
+                if (blocked) {
+                    const leftVec = new Phaser.Math.Vector2().setToPolar(this.hull.rotation - Math.PI / 2 - 0.7, this.rayLength);
+                    const rightVec = new Phaser.Math.Vector2().setToPolar(this.hull.rotation - Math.PI / 2 + 0.7, this.rayLength);
 
-                let moveTarget = targetPos;
+                    const leftRay = new Phaser.Geom.Line(startPoint.x, startPoint.y, startPoint.x + leftVec.x, startPoint.y + leftVec.y);
+                    const rightRay = new Phaser.Geom.Line(startPoint.x, startPoint.y, startPoint.x + rightVec.x, startPoint.y + rightVec.y);
 
-                if (this.currentNavPath && this.currentNavPath.length > 0) {
-                    const firstPoint = this.currentNavPath[0];
-                    const distToFirst = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, firstPoint.x, firstPoint.y);
+                    let leftBlocked = false;
+                    let rightBlocked = false;
 
-                    if (distToFirst < 30) {
-                        this.currentNavPath.shift();
+                    for (let i = 0; i < obs.length; i++) {
+                        if (Phaser.Geom.Intersects.LineToRectangle(leftRay, obs[i].body)) leftBlocked = true;
+                        if (Phaser.Geom.Intersects.LineToRectangle(rightRay, obs[i].body)) rightBlocked = true;
                     }
 
-                    if (this.currentNavPath.length > 0) {
-                        moveTarget = this.currentNavPath[0];
+                    if (leftBlocked && !rightBlocked) {
+                        moveAngle += 1.2;
+                    } else if (rightBlocked && !leftBlocked) {
+                        moveAngle -= 1.2;
+                    } else if (leftBlocked && rightBlocked) {
+                        moveAngle += Math.PI;
+                    } else {
+                        const diff = Phaser.Math.Angle.Wrap(angleToTarget - (this.hull.rotation - Math.PI / 2));
+                        moveAngle += (diff > 0 ? 1.0 : -1.0);
                     }
                 }
 
-                if (debugGraphics && this.currentNavPath) {
-                    debugGraphics.lineStyle(2, 0xff0000, 1);
-                    if (this.currentNavPath.length > 0) {
-                        debugGraphics.lineBetween(this.hull.x, this.hull.y, this.currentNavPath[0].x, this.currentNavPath[0].y);
-                        for (let i = 0; i < this.currentNavPath.length - 1; i++) {
-                            debugGraphics.lineBetween(this.currentNavPath[i].x, this.currentNavPath[i].y, this.currentNavPath[i + 1].x, this.currentNavPath[i + 1].y);
-                        }
-                    }
-                }
-
-                this.moveTo(moveTarget.x, moveTarget.y);
-            }
-
-            moveTo(tx, ty) {
                 const terrainMultiplier = this.scene.getTerrainSpeedMultiplier ? this.scene.getTerrainSpeedMultiplier(this.hull.x, this.hull.y) : 1;
                 const currentSpeed = this.speed * terrainMultiplier;
 
-                const angle = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, tx, ty);
-                const velocity = this.scene.physics.velocityFromRotation(angle, currentSpeed);
+                const velocity = this.scene.physics.velocityFromRotation(moveAngle, currentSpeed);
                 this.hull.setVelocity(velocity.x, velocity.y);
 
-                const desiredAngle = angle + Math.PI / 2;
-                this.hull.rotation = Phaser.Math.Angle.RotateTo(this.hull.rotation, desiredAngle, 0.1);
+                const desiredRotation = moveAngle + Math.PI / 2;
+                this.hull.rotation = Phaser.Math.Angle.RotateTo(this.hull.rotation, desiredRotation, 0.1);
 
                 if (this.state === 'PATROL') this.turret.rotation = this.hull.rotation;
             }
 
             canSeePlayer(player) {
                 if (!player.active) return false;
+
+                if (player.isDisguised) return false;
+                if (activePowerup && activePowerup.type.id === 'INVISIBLE') return false;
+
                 const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, player.hull.x, player.hull.y);
                 if (dist > this.visionRange) return false;
 
@@ -724,11 +1044,11 @@
 
         function preload() {
             this.load.image('tanks_sheet', ASSET_URL);
-            this.load.scenePlugin('NavMeshPlugin', 'https://cdn.jsdelivr.net/npm/phaser-navmesh@2.2.2/dist/phaser-navmesh.min.js', 'navMeshPlugin', 'navMeshPlugin');
         }
 
         function create() {
-            this.textures.addAtlas('tanks', this.textures.get('tanks_sheet').source[0].image, ATLAS_JSON);
+            this.textures.addAtlas('tanks',
+                this.textures.get('tanks_sheet').source[0].image, ATLAS_JSON);
 
             cursors = this.input.keyboard.createCursorKeys();
             cursors.w = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
@@ -747,37 +1067,25 @@
             const rows = Math.ceil(LEVEL_HEIGHT / 64);
 
             for (let y = 0; y < rows; y++) {
-                this.tileGrid[y] = [];
-                for (let x = 0; x < cols; x++) {
-                    const isSand = Math.random() < 0.3;
-                    const tileType = isSand ?
-                        (Math.random() < 0.5 ? 'tileSand1.png' : 'tileSand2.png') :
-                        (Math.random() < 0.5 ? 'tileGrass1.png' : 'tileGrass2.png');
-
+                this.tileGrid[y] = []; for (let x = 0; x < cols; x++) {
+                    const
+                        isSand = Math.random() < 0.3; const tileType = isSand ? (Math.random() < 0.5 ? 'tileSand1.png'
+                            : 'tileSand2.png') : (Math.random() < 0.5 ? 'tileGrass1.png' : 'tileGrass2.png');
                     this.add.image(x * 64 + 32, y * 64 + 32, 'tanks', tileType).setTint(0x777777);
                     this.tileGrid[y][x] = isSand ? 'sand' : 'grass';
                 }
-            }
-
-            this.getTerrainSpeedMultiplier = (x, y) => {
+            } this.getTerrainSpeedMultiplier = (x, y) => {
                 const col = Math.floor(x / 64);
                 const row = Math.floor(y / 64);
                 if (row >= 0 && row < this.tileGrid.length && col >= 0 && col < this.tileGrid[0].length) {
                     return this.tileGrid[row][col] === 'sand' ? 0.6 : 1.0;
-                }
-                return 1.0;
+                } return 1.0;
             };
-
-            obstacles = this.physics.add.staticGroup();
-            hazards = this.physics.add.staticGroup();
+            obstacles = this.physics.add.staticGroup(); hazards = this.physics.add.staticGroup();
             bullets = this.physics.add.group({
-                classType: Bullet,
-                maxSize: 50,
-                runChildUpdate: false
-            });
-            sentryHulls = this.physics.add.group();
-            sentries = [];
-
+                classType: Bullet, maxSize: 50, runChildUpdate:
+                    false
+            }); sentryHulls = this.physics.add.group(); sentries = [];
             this.physics.add.collider(bullets, obstacles, (bullet, obstacle) => {
                 if (!bullet.active) return;
 
@@ -788,14 +1096,13 @@
                 }
 
                 if (bullet.bounceCount < 1) {
-                    bullet.bounceCount++;
-                    const body = bullet.body;
-                    if (body.touching.up || body.touching.down) body.velocity.y *= -1;
-                    if (body.touching.left || body.touching.right) body.velocity.x *= -1;
+                    bullet.bounceCount++; const body = bullet.body; if
+                        (body.touching.up || body.touching.down) body.velocity.y *= -1; if
+                        (body.touching.left || body.touching.right) body.velocity.x *= -1;
                     bullet.rotation = body.velocity.angle() + Math.PI / 2;
                 } else {
-                    bullet.reset();
-                    if (obstacle.texture.key === 'tanks' && obstacle.frame.name.includes('crate')) {
+                    bullet.reset(); if
+                        (obstacle.texture.key === 'tanks' && obstacle.frame.name.includes('crate')) {
                         obstacle.destroy();
                     }
                 }
@@ -810,20 +1117,82 @@
 
             createMobileControls.call(this);
 
+            this.input.keyboard.on('keydown', (event) => {
+                const key = parseInt(event.key);
+                if (!isNaN(key)) {
+                    const idx = (key === 0) ? 9 : key - 1;
+                    activatePowerup.call(this, idx);
+                }
+            });
+
             startLevel.call(this, currentLevel);
+        }
+
+        function activatePowerup(index) {
+            if (activePowerup) return;
+            if (!inventory[index]) return;
+
+            const p = inventory[index];
+            activePowerup = {
+                type: p,
+                endTime: this.time.now + 10000,
+                startTime: this.time.now
+            };
+
+            updateHUD();
+
+            if (player) {
+                if (p.id === 'INVISIBLE') {
+                    player.hull.setAlpha(0.2);
+                    player.turret.setAlpha(0.2);
+                } else if (p.id === 'DISGUISE') {
+                    player.isDisguised = true;
+                    player.hull.setTexture('tanks', 'tankBody_darkLarge.png');
+                    player.turret.setTexture('tanks',
+                        'tankDark_barrel1_outline.png');
+                } else if (p.id === 'SHIELD') {
+                    player.isShielded = true;
+                    if (!player.shieldInfo) {
+                        player.shieldInfo = this.add.graphics();
+                    }
+                } else if (p.id === 'DECOY') {
+                    const decoy = this.add.sprite(player.hull.x, player.hull.y,
+                        'tanks', 'tankBody_blue_outline.png');
+                    decoy.turret = this.add.sprite(player.hull.x, player.hull.y,
+                        'tanks', 'tankBlue_barrel1_outline.png');
+                    decoy.turret.setOrigin(0.5, 0.7);
+                    decoy.isDecoy = true;
+
+                    if (!this.decoys) this.decoys = [];
+                    this.decoys.push(decoy);
+
+                    this.time.delayedCall(10000, () => {
+                        if (decoy.active) {
+                            decoy.destroy();
+                            if (decoy.turret) decoy.turret.destroy();
+                        }
+                    });
+                }
+            }
         }
 
         function startLevel(levelNum) {
             currentLevel = levelNum;
             isMissionComplete = false;
             isObjectiveCollected = false;
-            document.getElementById('mission-status').style.display = 'block';
-            document.getElementById('mission-status').innerText = 'LEVEL ' + levelNum + ' START';
-            document.getElementById('mission-status').style.color = '#00d2ff';
-            document.getElementById('mission-status').style.borderColor = '#00d2ff';
+            document.getElementById('mission-status').style.display =
+                'block';
+            document.getElementById('mission-status').innerText = 'LEVEL ' +
+                levelNum + ' START';
+            document.getElementById('mission-status').style.color =
+                '#00d2ff';
+            document.getElementById('mission-status').style.borderColor =
+                '#00d2ff';
 
             this.time.delayedCall(2000, () => {
-                if (!isMissionComplete) document.getElementById('mission-status').style.display = 'none';
+                if (!isMissionComplete)
+                    document.getElementById('mission-status').style.display =
+                        'none';
             });
 
             document.querySelectorAll('.status-alert').forEach(el => {
@@ -854,113 +1223,92 @@
             const rows = Math.ceil(LEVEL_HEIGHT / TILE_SIZE);
             const grid = Array(rows).fill().map(() => Array(cols).fill(0));
 
-            for (let y = 0; y < rows; y++) {
-                grid[y][0] = 1;
-                grid[y][cols - 1] = 1;
-            }
-            for (let x = 0; x < cols; x++) {
-                grid[0][x] = 1;
-                grid[rows - 1][x] = 1;
-            }
-
-            const obstacleCount = 30 + (levelNum * 5);
-            let obstaclesPlaced = 0;
-            while (obstaclesPlaced < obstacleCount) {
-                const c = Phaser.Math.Between(1, cols - 2);
-                const r = Phaser.Math.Between(1, rows - 2);
-                if (grid[r][c] === 0) {
-                    grid[r][c] = 1;
-                    const x = c * TILE_SIZE + TILE_SIZE / 2;
-                    const y = r * TILE_SIZE + TILE_SIZE / 2;
-                    const type = Phaser.Math.RND.pick(['crateMetal.png', 'crateWood.png', 'barrelRust_top.png', 'treeGreen_small.png']);
-                    obstacles.create(x, y, 'tanks', type).setTint(0x777777);
-                    obstaclesPlaced++;
-                }
-            }
-
-            const findSpawn = () => {
-                let attempts = 0;
-                while (attempts < 1000) {
-                    const c = Phaser.Math.Between(1, cols - 2);
-                    const r = Phaser.Math.Between(1, rows - 2);
-                    if (grid[r][c] === 0) {
-                        return { x: c * TILE_SIZE + TILE_SIZE / 2, y: r * TILE_SIZE + TILE_SIZE / 2, c, r };
+            for (let y = 0; y < rows; y++) { grid[y][0] = 1; grid[y][cols - 1] = 1; } for (let
+                x = 0; x < cols; x++) { grid[0][x] = 1; grid[rows - 1][x] = 1; } const
+                    obstacleCount = 30 + (levelNum * 5); let obstaclesPlaced = 0; while
+                (obstaclesPlaced < obstacleCount) {
+                const c = Phaser.Math.Between(1, cols -
+                    2); const r = Phaser.Math.Between(1, rows - 2); if (grid[r][c] === 0) {
+                        grid[r][c] = 1; const x = c * TILE_SIZE + TILE_SIZE / 2; const y = r * TILE_SIZE +
+                            TILE_SIZE / 2; const
+                                type = Phaser.Math.RND.pick(['crateMetal.png', 'crateWood.png'
+                                    , 'barrelRust_top.png', 'treeGreen_small.png']); obstacles.create(x,
+                                        y, 'tanks', type).setTint(0x777777); obstaclesPlaced++;
                     }
-                    attempts++;
-                }
-                return { x: 200, y: 200 };
-            };
-
-            const pSpawn = findSpawn();
+            } const
+                findSpawn = () => {
+                    let attempts = 0;
+                    while (attempts < 1000) {
+                        const c = Phaser.Math.Between(1, cols - 2); const
+                            r = Phaser.Math.Between(1, rows - 2); if (grid[r][c] === 0) {
+                                return {
+                                    x: c
+                                        * TILE_SIZE + TILE_SIZE / 2, y: r * TILE_SIZE + TILE_SIZE / 2, c, r
+                                };
+                            }
+                        attempts++;
+                    } return { x: 200, y: 200 };
+                }; const pSpawn = findSpawn();
             player = new PlayerTank(this, pSpawn.x, pSpawn.y);
-            this.cameras.main.startFollow(player.hull);
-
-
-            try {
-                if (this.navMeshPlugin) {
-                    const map = this.make.tilemap({ data: grid, tileWidth: TILE_SIZE, tileHeight: TILE_SIZE });
-                    const tileset = map.addTilesetImage('tanks_sheet');
-                    if (tileset) {
-                        const layer = map.createLayer(0, tileset, 0, 0);
-                        layer.setVisible(false);
-                        map.setCollision(1);
-                        this.navMesh = this.navMeshPlugin.buildMeshFromTilemap("navMesh", map, [layer], (tile) => tile.index === 0);
-                        if (this.navMesh && debugGraphics) this.navMesh.enableDebug(debugGraphics);
-                    } else {
-                        console.warn("Retrying with 'tanks' atlas as fallback for tileset...");
-
-                    }
-                }
-            } catch (e) {
-                console.error("NavMesh setup failed:", e);
-                this.navMesh = null;
+            this.cameras.main.startFollow(player.hull); let oSpawn = findSpawn();
+            while (Phaser.Math.Distance.Between(pSpawn.x, pSpawn.y, oSpawn.x,
+                oSpawn.y) < 800) { oSpawn = findSpawn(); }
+            objective = this.physics.add.image(oSpawn.x, oSpawn.y, 'tanks'
+                , 'specialBarrel1_outline.png');
+            extractionZone = this.add.rectangle(pSpawn.x, pSpawn.y, 120, 120,
+                0x00ff00, 0.2); this.physics.add.existing(extractionZone, true); const
+                    enemyCount = 2 + Math.floor(levelNum * 1.5); for (let i = 0; i < enemyCount;
+                i++) {
+                let eSpawn = findSpawn(); while
+                    (Phaser.Math.Distance.Between(pSpawn.x, pSpawn.y, eSpawn.x, eSpawn.y) <
+                    500) { eSpawn = findSpawn(); } const path = [{ x: eSpawn.x, y: eSpawn.y }];
+                let p2 = findSpawn(); path.push({ x: p2.x, y: p2.y }); const s = new
+                    SentryTank(this, path); sentries.push(s); sentryHulls.add(s.hull);
             }
-
-            let oSpawn = findSpawn();
-            while (Phaser.Math.Distance.Between(pSpawn.x, pSpawn.y, oSpawn.x, oSpawn.y) < 800) {
-                oSpawn = findSpawn();
-            }
-            objective = this.physics.add.image(oSpawn.x, oSpawn.y, 'tanks', 'specialBarrel1_outline.png');
-
-            extractionZone = this.add.rectangle(pSpawn.x, pSpawn.y, 120, 120, 0x00ff00, 0.2);
-            this.physics.add.existing(extractionZone, true);
-
-            const enemyCount = 2 + Math.floor(levelNum * 1.5);
-            for (let i = 0; i < enemyCount; i++) {
-                let eSpawn = findSpawn();
-                while (Phaser.Math.Distance.Between(pSpawn.x, pSpawn.y, eSpawn.x, eSpawn.y) < 500) {
-                    eSpawn = findSpawn();
-                }
-
-                const path = [{ x: eSpawn.x, y: eSpawn.y }];
-                let p2 = findSpawn();
-                path.push({ x: p2.x, y: p2.y });
-
-                const s = new SentryTank(this, path);
-                sentries.push(s);
-                sentryHulls.add(s.hull);
-            }
-
             this.physics.add.collider(player.hull, obstacles);
             this.physics.add.collider(player.hull, sentryHulls);
-
             this.physics.add.collider(sentryHulls, obstacles);
-
             this.physics.add.overlap(bullets, player.hull, (hull, bullet) => {
                 if (!bullet.active || bullet.isPlayerBullet) return;
+
+                if (player.isShielded) {
+                    bullet.reset();
+                    player.isShielded = false;
+                    if (player.shieldInfo) player.shieldInfo.clear();
+                    if (activePowerup && activePowerup.type.id === 'SHIELD') {
+                        activePowerup = null;
+                        updateHUD();
+                    }
+                    return;
+                }
+
                 bullet.reset();
                 player.destroy();
-                document.getElementById('mission-status').style.display = 'block';
-                document.getElementById('mission-status').innerText = 'MISSION FAILED - RESTARTING...';
-                document.getElementById('mission-status').style.color = '#e74c3c';
-                document.getElementById('mission-status').style.borderColor = '#e74c3c';
+                document.getElementById('mission-status').style.display
+                    = 'block';
+                document.getElementById('mission-status').innerText =
+                    'MISSION FAILED - RESTARTING...';
+                document.getElementById('mission-status').style.color =
+                    '#e74c3c';
+                document.getElementById('mission-status').style.borderColor
+                    = '#e74c3c';
 
                 this.time.delayedCall(3000, () => {
                     startLevel.call(this, currentLevel);
                 });
             });
 
-            this.physics.add.overlap(bullets, sentryHulls, (bullet, hull) => {
+            this.physics.add.overlap(bullets, bullets, (b1, b2) => {
+                if (!b1.active || !b2.active) return;
+                if (b1.isFlame && !b2.isPlayerBullet) {
+                    b2.reset();
+                } else if (b2.isFlame && !b1.isPlayerBullet) {
+                    b1.reset();
+                }
+            });
+
+            this.physics.add.overlap(bullets, sentryHulls, (bullet,
+                hull) => {
                 if (!bullet.active || !bullet.isPlayerBullet) return;
                 bullet.reset();
                 const sentry = hull.getData('parent');
@@ -973,9 +1321,12 @@
             this.physics.add.overlap(player.hull, objective, () => {
                 isObjectiveCollected = true;
                 objective.destroy();
-                document.getElementById('mission-status').style.display = 'block';
-                document.getElementById('mission-status').innerText = 'OBJECTIVE SECURED! RETURN TO EXTRACT!';
-                document.getElementById('mission-status').style.color = '#e67e22';
+                document.getElementById('mission-status').style.display
+                    = 'block';
+                document.getElementById('mission-status').innerText =
+                    'OBJECTIVE SECURED! RETURN TO EXTRACT!';
+                document.getElementById('mission-status').style.color =
+                    '#e67e22';
             });
 
             this.physics.add.overlap(player.hull, extractionZone, () => {
@@ -989,15 +1340,164 @@
                             s.hull.body.stop();
                         }
                     });
-                    document.getElementById('mission-status').innerText = 'MISSION ACCOMPLISHED! NEXT LEVEL...';
-                    document.getElementById('mission-status').style.color = '#2ecc71';
+                    document.getElementById('mission-status').innerText =
+                        'MISSION ACCOMPLISHED!';
+                    document.getElementById('mission-status').style.color =
+                        '#2ecc71';
 
-                    this.time.delayedCall(3000, () => {
-                        startLevel.call(this, currentLevel + 1);
+                    this.time.delayedCall(2000, () => {
+                        showPowerupSelection.call(this);
                     });
                 }
             });
         }
+
+        const POWERUP_INDEX_MAP = {
+            'RAPID_FIRE': 0,
+            'MULTI_SHOT': 1,
+            'POWER_SHOT': 2,
+            'HOMING_SHOT': 3,
+            'FLAME_THROWER': 4,
+            'SCRAMBLE': 5,
+            'INVISIBLE': 6,
+            'DECOY': 7,
+            'SHIELD': 8,
+            'DISGUISE': 9
+        };
+
+        function updateHUD() {
+            inventory.forEach((item, index) => {
+                const slot = document.getElementById('slot-' + index);
+
+                slot.innerHTML = '';
+
+                const keySpan = document.createElement('span');
+                keySpan.className = 'slot-key';
+                keySpan.innerText = (index + 1) % 10;
+                slot.appendChild(keySpan);
+
+                if (item) {
+                    slot.classList.add('filled');
+                    slot.classList.remove('active');
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.innerText = item.name.substring(0,
+                        3).toUpperCase();
+                    slot.appendChild(nameSpan);
+                } else {
+                    slot.classList.remove('filled');
+                    slot.classList.remove('active');
+                }
+            });
+
+            if (activePowerup) {
+                const idx = POWERUP_INDEX_MAP[activePowerup.type.id];
+                const slot = document.getElementById('slot-' + idx);
+                if (slot) {
+                    slot.classList.add('active');
+                    const bar = document.createElement('div');
+                    bar.className = 'active-timer-bar';
+                    bar.id = 'active-timer-bar';
+                    slot.appendChild(bar);
+                }
+            }
+        }
+
+        function showPowerupSelection() {
+            const cannonMissing = [];
+            CANNON_KEYS.forEach(key => {
+                const idx = POWERUP_INDEX_MAP[key];
+                if (!inventory[idx])
+                    cannonMissing.push(POWERUPS.CANNON[key]);
+            });
+
+            const cloakMissing = [];
+            CLOAK_KEYS.forEach(key => {
+                const idx = POWERUP_INDEX_MAP[key];
+                if (!inventory[idx])
+                    cloakMissing.push(POWERUPS.CLOAK[key]);
+            });
+
+            if (cannonMissing.length === 0 && cloakMissing.length
+                === 0) {
+                document.getElementById('mission-status').innerText =
+                    'INVENTORY FULL - ADVANCING...';
+                setTimeout(() => {
+                    startLevel.call(this, currentLevel + 1);
+                }, 2000);
+                return;
+            }
+
+            currentSelectionOptions = [];
+
+
+            if (cannonMissing.length > 0 && cloakMissing.length > 0) {
+                const c = Phaser.Math.RND.pick(cannonMissing);
+                const l = Phaser.Math.RND.pick(cloakMissing);
+                currentSelectionOptions = [c, l];
+                if (Math.random() > 0.5)
+                    currentSelectionOptions.reverse();
+            } else if (cannonMissing.length === 0) {
+                Phaser.Utils.Array.Shuffle(cloakMissing);
+                currentSelectionOptions = cloakMissing.slice(0, 2);
+            } else {
+                Phaser.Utils.Array.Shuffle(cannonMissing);
+                currentSelectionOptions = cannonMissing.slice(0, 2);
+            }
+
+            if (currentSelectionOptions.length === 0) {
+                startLevel.call(this, currentLevel + 1);
+                return;
+            }
+
+            const overlay =
+                document.getElementById('powerup-selection-overlay');
+            overlay.style.display = 'flex';
+
+            const card1 = document.getElementById('option-1');
+            const card2 = document.getElementById('option-2');
+
+            setupCard(card1, currentSelectionOptions[0]);
+
+            if (currentSelectionOptions.length > 1) {
+                card2.style.display = 'block';
+                setupCard(card2, currentSelectionOptions[1]);
+            } else {
+                card2.style.display = 'none';
+            }
+
+            isPowerupSelectionActive = true;
+        }
+
+        function setupCard(element, powerup) {
+            const title = element.querySelector('.powerup-title');
+            const desc = element.querySelector('.powerup-desc');
+
+            title.innerText = powerup.name;
+            title.className = 'powerup-title ' + (powerup.type ===
+                'CANNON' ? 'powerup-type-cannon' :
+                'powerup-type-cloak');
+            desc.innerText = powerup.desc;
+        }
+
+        window.selectPowerup = function (optionIndex) {
+            if (!isPowerupSelectionActive) return;
+            if (!currentSelectionOptions[optionIndex]) return;
+
+            const selected = currentSelectionOptions[optionIndex];
+            const idx = POWERUP_INDEX_MAP[selected.id];
+
+            inventory[idx] = selected;
+            updateHUD();
+
+            document.getElementById('powerup-selection-overlay').style.display
+                = 'none';
+            isPowerupSelectionActive = false;
+
+            const scene = game.scene.scenes[0];
+            startLevel.call(scene, currentLevel + 1);
+        };
+
 
         function createMobileControls() {
             if (this.sys.game.device.os.desktop) return;
@@ -1011,50 +1511,36 @@
             let baseY = height - 150;
 
             if (width < 600) {
-                radius = 60;
-                baseX1 = width * 0.25;
-                baseX2 = width * 0.75;
+                radius = 60; baseX1 = width * 0.25; baseX2 = width * 0.75;
                 baseY = height - 100;
             }
-
             leftStick = this.plugins.get('rexVirtualJoystick').add(this, {
-                x: baseX1,
-                y: baseY,
-                radius: radius,
-                base: this.add.circle(0, 0, radius, 0x888888).setAlpha(0.5).setDepth(100),
-                thumb: this.add.circle(0, 0, radius * 0.5, 0xcccccc).setAlpha(0.8).setDepth(100),
-                dir: '8dir',
-                forceMin: 16,
+                x:
+                    baseX1, y: baseY, radius: radius, base: this.add.circle(0, 0,
+                        radius, 0x888888).setAlpha(0.5).setDepth(100), thumb:
+                    this.add.circle(0, 0, radius * 0.5,
+                        0xcccccc).setAlpha(0.8).setDepth(100), dir: '8dir', forceMin: 16,
                 enable: true
             });
-
             rightStick = this.plugins.get('rexVirtualJoystick').add(this, {
-                x: baseX2,
-                y: baseY,
-                radius: radius,
-                base: this.add.circle(0, 0, radius, 0x888888).setAlpha(0.5).setDepth(100),
-                thumb: this.add.circle(0, 0, radius * 0.5, 0xcccccc).setAlpha(0.8).setDepth(100),
-                dir: '8dir',
-                forceMin: 16,
+                x:
+                    baseX2, y: baseY, radius: radius, base: this.add.circle(0, 0,
+                        radius, 0x888888).setAlpha(0.5).setDepth(100), thumb:
+                    this.add.circle(0, 0, radius * 0.5,
+                        0xcccccc).setAlpha(0.8).setDepth(100), dir: '8dir', forceMin: 16,
                 enable: true
-            });
-
-            this.input.addPointer(1);
-
+            }); this.input.addPointer(1);
             rightStick.on('pointerdown', () => {
                 rightStick.clickStartTime = Date.now();
             });
             rightStick.on('pointerup', () => {
-                const duration = Date.now() - rightStick.clickStartTime;
-                if (duration < 200) {
-                    manualFireRequested = true;
-                }
+                const duration = Date.now() -
+                    rightStick.clickStartTime;
+                if (duration < 200) { manualFireRequested = true; }
             });
-        }
-
-        function update(time, delta) {
+        } function
+            update(time, delta) {
             if (isMissionComplete) return;
-
             player.update(time, cursors, this.input.activePointer);
             sentries.forEach(s => s.update(time, player));
 
@@ -1064,10 +1550,25 @@
             sentries.forEach(s => {
                 if (!s.active) return;
                 rayGraphics.fillStyle(0xff0000, 0.4);
-                const startAngle = s.turret.rotation - Math.PI / 2 - s.visionAngle / 2;
-                rayGraphics.slice(s.hull.x, s.hull.y, s.visionRange, startAngle, startAngle + s.visionAngle, false);
+                const startAngle = s.turret.rotation - Math.PI /
+                    2 - s.visionAngle / 2;
+                rayGraphics.slice(s.hull.x, s.hull.y,
+                    s.visionRange, startAngle, startAngle +
+                s.visionAngle, false);
                 rayGraphics.fillPath();
             });
+
+            if (activePowerup) {
+                const bar =
+                    document.getElementById('active-timer-bar');
+                if (bar) {
+                    const remaining = activePowerup.endTime - time;
+                    const total = 10000;
+                    const pct = Math.max(0, (remaining / total) *
+                        100);
+                    bar.style.width = pct + '%';
+                }
+            }
         }
     </script>
 </body>
