@@ -619,8 +619,8 @@
             cursors.s = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
             cursors.d = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
 
-            for (let y = 0; y < 600; y += 64) {
-                for (let x = 0; x < 800; x += 64) this.add.image(x + 32, y + 32, 'tanks', 'tileGrass1.png');
+            for (let y = 0; y < this.scale.height; y += 64) {
+                for (let x = 0; x < this.scale.width; x += 64) this.add.image(x + 32, y + 32, 'tanks', 'tileGrass1.png');
             }
 
             for (let x = 100; x < 700; x += 64) this.add.image(x, 100, 'tanks', 'tileGrass_roadEast.png');
