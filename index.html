@@ -359,6 +359,7 @@
         let rayGraphics;
         let leftStick;
         let rightStick;
+        let isFireButtonDown = false;
         let currentLevel = 1;
 
         class Bullet extends Phaser.Physics.Arcade.Sprite {
@@ -465,13 +466,15 @@
 
                 let targetAngle = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, pointer.worldX, pointer.worldY);
 
-                let shouldFire = pointer.isDown;
+                let shouldFire = false;
+                if (this.scene.sys.game.device.os.desktop) {
+                    shouldFire = pointer.isDown;
+                } else {
+                    shouldFire = isFireButtonDown;
+                }
 
                 if (rightStick && rightStick.force > 0) {
                     targetAngle = rightStick.rotation;
-                    if (rightStick.force > 0.5) {
-                        shouldFire = true;
-                    }
                 }
 
                 this.turret.rotation = targetAngle + Math.PI / 2;
@@ -864,6 +867,22 @@
             });
 
             this.input.addPointer(1);
+
+            const fireBtnRadius = 40;
+            const fireBtn = this.add.circle(width - 80, height - 260, fireBtnRadius, 0xff0000)
+                .setScrollFactor(0)
+                .setDepth(100)
+                .setAlpha(0.6)
+                .setInteractive();
+
+            this.add.text(fireBtn.x, fireBtn.y, 'FIRE', { fontSize: '16px', fontFamily: 'Orbitron' })
+                .setOrigin(0.5)
+                .setScrollFactor(0)
+                .setDepth(101);
+
+            fireBtn.on('pointerdown', () => isFireButtonDown = true);
+            fireBtn.on('pointerup', () => isFireButtonDown = false);
+            fireBtn.on('pointerout', () => isFireButtonDown = false);
         }
 
         function update(time, delta) {
