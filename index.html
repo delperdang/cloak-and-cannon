@@ -1089,6 +1089,18 @@
             this.physics.add.collider(bullets, obstacles, (bullet, obstacle) => {
                 if (!bullet.active) return;
 
+                if (bullet.isPowerShot) {
+                    this.add.particles(obstacle.x, obstacle.y, 'tanks', {
+                        frame: 'explosion1.png',
+                        speed: 50,
+                        scale: { start: 1, end: 0 },
+                        duration: 500,
+                        maxParticles: 10
+                    });
+                    obstacle.destroy();
+                    return;
+                }
+
                 if (obstacle.frame.name.includes('crateWood')) {
                     obstacle.destroy();
                     bullet.reset();
