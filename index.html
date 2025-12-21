@@ -723,7 +723,7 @@
                 this.turret.rotation = targetAngle + Math.PI / 2;
 
                 if (shouldFire && time > this.lastFired) {
-                    let fireDelay = 500;
+                    let fireDelay = 800;
                     let isRapid = false;
                     let isMulti = false;
                     let isPower = false;
@@ -733,7 +733,7 @@
                         const pid = activePowerup.type.id;
                         if (pid === 'RAPID_FIRE') { isRapid = true; fireDelay = 150; }
                         if (pid === 'MULTI_SHOT') isMulti = true;
-                        if (pid === 'POWER_SHOT') isPower = true;
+                        if (pid === 'POWER_SHOT') { isPower = true; fireDelay = 500; }
                         if (pid === 'FLAME_THROWER') { isFlame = true; fireDelay = 100; }
                     } else if (activePowerup && activePowerup.type.type === 'CLOAK') {
                         activePowerup.endTime = time;
@@ -753,7 +753,7 @@
                     if (activePowerup && activePowerup.type.id === 'LAND_MINE') {
                         const mine = mines.create(this.hull.x, this.hull.y, 'tanks', 'barrelRed_top.png');
                         mine.setDepth(5);
-                        this.lastFired = time + 1000;
+                        this.lastFired = time + 2000;
                         return;
                     }
 
