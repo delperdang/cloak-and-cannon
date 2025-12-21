@@ -151,12 +151,11 @@
 
         #powerup-hud {
             position: absolute;
-            bottom: 20px;
+            top: 60px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
             gap: 10px;
-            pointer-events: none;
             z-index: 500;
         }
 
@@ -172,6 +171,7 @@
             font-size: 10px;
             color: #7f8c8d;
             position: relative;
+            cursor: pointer;
         }
 
         .powerup-slot.filled {
@@ -182,6 +182,16 @@
         .powerup-slot.active {
             border-color: #f1c40f;
             box-shadow: 0 0 10px #f1c40f;
+        }
+
+        .powerup-slot.used {
+            opacity: 0.3;
+            filter: grayscale(100%);
+            cursor: not-allowed;
+        }
+
+        .powerup-slot:not(.filled) {
+            cursor: default;
         }
 
         .slot-cannon {
@@ -547,6 +557,7 @@
 
         let activePowerup = null;
         let inventory = Array(10).fill(null);
+        let usedPowerups = new Set();
         let currentSelectionOptions = [];
         let isPowerupSelectionActive = false;
 
@@ -1144,6 +1155,7 @@
         function activatePowerup(index) {
             if (activePowerup) return;
             if (!inventory[index]) return;
+            if (usedPowerups.has(index)) return;
 
             const p = inventory[index];
             activePowerup = {
@@ -1152,6 +1164,9 @@
                 startTime: this.time.now
             };
 
+            updateHUD();
+
+            usedPowerups.add(index);
             updateHUD();
 
             if (player) {
@@ -1191,6 +1206,8 @@
 
         function startLevel(levelNum) {
             currentLevel = levelNum;
+            usedPowerups.clear();
+            updateHUD();
             isMissionComplete = false;
             isObjectiveCollected = false;
             document.getElementById('mission-status').style.display =
@@ -1381,7 +1398,7 @@
             'RAPID_FIRE': 0,
             'MULTI_SHOT': 1,
             'POWER_SHOT': 2,
-            'HOMING_SHOT': 3,
+            'LAND_MINE': 3,
             'FLAME_THROWER': 4,
             'SCRAMBLE': 5,
             'INVISIBLE': 6,
@@ -1395,6 +1412,7 @@
                 const slot = document.getElementById('slot-' + index);
 
                 slot.innerHTML = '';
+                slot.onclick = () => window.triggerPowerup(index);
 
                 const keySpan = document.createElement('span');
                 keySpan.className = 'slot-key';
@@ -1404,14 +1422,25 @@
                 if (item) {
                     slot.classList.add('filled');
                     slot.classList.remove('active');
+                    slot.style.cursor = 'pointer';
 
                     const nameSpan = document.createElement('span');
                     nameSpan.innerText = item.name.substring(0,
                         3).toUpperCase();
                     slot.appendChild(nameSpan);
+
+                    if (usedPowerups.has(index)) {
+                        slot.classList.add('used');
+                        slot.style.cursor = 'not-allowed';
+                    } else {
+                        slot.classList.remove('used');
+                    }
+
                 } else {
                     slot.classList.remove('filled');
                     slot.classList.remove('active');
+                    slot.classList.remove('used');
+                    slot.style.cursor = 'default';
                 }
             });
 
@@ -1521,6 +1550,13 @@
 
             const scene = game.scene.scenes[0];
             startLevel.call(scene, currentLevel + 1);
+        };
+
+        window.triggerPowerup = function (index) {
+            const scene = game.scene.scenes[0];
+            if (scene) {
+                activatePowerup.call(scene, index);
+            }
         };
 
 
