@@ -514,6 +514,7 @@
         let leftStick;
         let rightStick;
         let debugGraphics;
+        let mines;
         let isFireButtonDown = false;
         let manualFireRequested = false;
         const POWERUPS = {
@@ -521,8 +522,8 @@
                 RAPID_FIRE: { id: 'RAPID_FIRE', name: 'Rapid Fire', desc: 'Significantly increases fire rate.', type: 'CANNON' },
                 MULTI_SHOT: { id: 'MULTI_SHOT', name: 'Multi-Shot', desc: 'Fires 3 rounds at once in a spread.', type: 'CANNON' },
                 POWER_SHOT: { id: 'POWER_SHOT', name: 'Power Shot', desc: 'Larger rounds that ignore obstacles.', type: 'CANNON' },
-                HOMING_SHOT: {
-                    id: 'HOMING_SHOT', name: 'Homing Shot', desc: 'Projectiles track the nearest enemy.', type: 'CANNON'
+                LAND_MINE: {
+                    id: 'LAND_MINE', name: 'Land Mine', desc: 'Drop explosive mines behind you.', type: 'CANNON'
                 },
                 FLAME_THROWER: {
                     id: 'FLAME_THROWER', name: 'Flame Thrower', desc: 'Short range fire that destroys enemy bullets.',
@@ -557,7 +558,7 @@
                 this.bounceCount = 0;
                 this.isPlayerBullet = false;
                 this.isPowerShot = false;
-                this.isHoming = false;
+                this.isPowerShot = false;
                 this.isFlame = false;
             }
 
@@ -568,7 +569,6 @@
                 this.setRotation(rotation);
                 this.isPlayerBullet = isPlayerBullet;
                 this.isPowerShot = options.powerShot || false;
-                this.isHoming = options.homing || false;
                 this.isFlame = options.flame || false;
 
                 let tex = isPlayerBullet ? 'bulletBlue3.png' : 'bulletRed3.png';
@@ -596,25 +596,10 @@
             }
 
             update(time, delta) {
-                if (this.isHoming && this.active && this.isPlayerBullet) {
-                    let nearest = null;
-                    let minDist = 10000;
-                    sentries.forEach(s => {
-                        if (s.active) {
-                            const d = Phaser.Math.Distance.Between(this.x, this.y, s.hull.x, s.hull.y);
-                            if (d < minDist) { minDist = d; nearest = s; }
-                        }
-                    }); if (nearest && minDist < 400) {
-                        const
-                            angleArg = Phaser.Math.Angle.Between(this.x, this.y, nearest.hull.x, nearest.hull.y); const
-                                currentAngle = this.body.velocity.angle(); const newAngle = Phaser.Math.Angle.RotateTo(currentAngle, angleArg,
-                                    0.05); this.scene.physics.velocityFromRotation(newAngle, 400, this.body.velocity); this.rotation = newAngle +
-                                        Math.PI / 2;
-                    }
-                }
+
             } reset() {
                 this.setActive(false); this.setVisible(false); this.body.stop();
-                this.isPowerShot = false; this.isHoming = false; this.isFlame = false;
+                this.isPowerShot = false; this.isFlame = false;
             }
         } class Tank {
             constructor(scene, x, y,
@@ -713,7 +698,6 @@
                     let isRapid = false;
                     let isMulti = false;
                     let isPower = false;
-                    let isHoming = false;
                     let isFlame = false;
 
                     if (activePowerup && activePowerup.type.type === 'CANNON') {
@@ -721,7 +705,6 @@
                         if (pid === 'RAPID_FIRE') { isRapid = true; fireDelay = 150; }
                         if (pid === 'MULTI_SHOT') isMulti = true;
                         if (pid === 'POWER_SHOT') isPower = true;
-                        if (pid === 'HOMING_SHOT') isHoming = true;
                         if (pid === 'FLAME_THROWER') { isFlame = true; fireDelay = 100; }
                     } else if (activePowerup && activePowerup.type.type === 'CLOAK') {
                         activePowerup.endTime = time;
@@ -736,7 +719,14 @@
                         if (this.shieldInfo) this.shieldInfo.clear();
                     }
 
-                    const bulletOptions = { powerShot: isPower, homing: isHoming, flame: isFlame };
+                    const bulletOptions = { powerShot: isPower, flame: isFlame };
+
+                    if (activePowerup && activePowerup.type.id === 'LAND_MINE') {
+                        const mine = mines.create(this.hull.x, this.hull.y, 'tanks', 'barrelRed_top.png');
+                        mine.setDepth(5);
+                        this.lastFired = time + 1000;
+                        return;
+                    }
 
                     if (isMulti) {
                         const offsets = [-0.2, 0, 0.2];
@@ -1098,6 +1088,7 @@
                         maxParticles: 10
                     });
                     obstacle.destroy();
+                    obstacle.destroy();
                     return;
                 }
 
@@ -1130,6 +1121,16 @@
             createMobileControls.call(this);
 
             this.input.keyboard.on('keydown', (event) => {
+                if (event.key === '`' || event.key === '~') {
+                    inventory.fill(null);
+                    let idx = 0;
+                    Object.values(POWERUPS.CANNON).forEach(p => { if (idx < 5) inventory[idx++] = p; });
+                    idx = 5;
+                    Object.values(POWERUPS.CLOAK).forEach(p => { if (idx < 10) inventory[idx++] = p; });
+                    updateHUD();
+                    return;
+                }
+
                 const key = parseInt(event.key);
                 if (!isNaN(key)) {
                     const idx = (key === 0) ? 9 : key - 1;
@@ -1326,6 +1327,18 @@
                 const sentry = hull.getData('parent');
                 if (sentry && sentry.active) {
                     sentry.explode();
+                }
+            });
+
+            mines = this.physics.add.group();
+            this.physics.add.overlap(mines, sentryHulls, (mine, hull) => {
+                const sentry = hull.getData('parent');
+                if (sentry && sentry.active) {
+                    mine.destroy();
+                    sentry.explode();
+                    const explosion = this.add.sprite(mine.x, mine.y, 'tanks', 'explosion1.png');
+                    explosion.play('explode');
+                    this.time.delayedCall(100, () => explosion.destroy());
                 }
             });
 
@@ -1542,6 +1555,8 @@
                         0xcccccc).setAlpha(0.8).setDepth(100), dir: '8dir', forceMin: 16,
                 enable: true
             }); this.input.addPointer(1);
+
+
             rightStick.on('pointerdown', () => {
                 rightStick.clickStartTime = Date.now();
             });
