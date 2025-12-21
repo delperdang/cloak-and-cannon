@@ -1249,6 +1249,7 @@
 
         function startLevel(levelNum) {
             currentLevel = levelNum;
+            activePowerup = null;
             usedPowerups.clear();
             updateHUD();
             isMissionComplete = false;
@@ -1290,6 +1291,7 @@
             sentries = [];
             if (objective) objective.destroy();
             if (extractionZone) extractionZone.destroy();
+            if (mines) mines.clear(true, true);
 
             const LEVEL_WIDTH = 1600;
             const LEVEL_HEIGHT = 1200;
