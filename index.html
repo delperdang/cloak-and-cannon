@@ -631,23 +631,46 @@
                 this.isPowerShot = false; this.isFlame = false;
             }
         } class Tank {
-            constructor(scene, x, y,
-                textureBody, textureBarrel) {
-                this.scene = scene; this.x = x; this.y = y; this.hull = scene.physics.add.sprite(x,
-                    y, 'tanks', textureBody); this.hull.setDrag(100); this.hull.setAngularDrag(100); this.hull.setMaxVelocity(200);
-                this.hull.setCollideWorldBounds(true); this.turret = scene.add.sprite(x, y, 'tanks', textureBarrel);
-                this.turret.setOrigin(0.5, 0.7); this.lastFired = 0; this.active = true;
-            } update() {
+            constructor(scene, x, y, textureBody, textureBarrel, trackTexture) {
+                this.scene = scene;
+                this.x = x;
+                this.y = y;
+                this.hull = scene.physics.add.sprite(x, y, 'tanks', textureBody);
+                this.hull.setDrag(100);
+                this.hull.setAngularDrag(100);
+                this.hull.setMaxVelocity(200);
+                this.hull.setCollideWorldBounds(true);
+                this.turret = scene.add.sprite(x, y, 'tanks', textureBarrel);
+                this.turret.setOrigin(0.5, 0.7);
+                this.lastFired = 0;
+                this.active = true;
+                this.trackTexture = trackTexture;
+                this.lastTrackPos = { x: x, y: y };
+            }
+
+            update() {
                 if (!this.active) return;
-                this.turret.x = this.hull.x; this.turret.y = this.hull.y;
+                this.turret.x = this.hull.x;
+                this.turret.y = this.hull.y;
+
+                if (this.trackTexture && this.scene.tracks) {
+                    const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, this.lastTrackPos.x, this.lastTrackPos.y);
+                    if (dist > 30) {
+                        const track = this.scene.tracks.create(this.hull.x, this.hull.y, 'tanks', this.trackTexture);
+                        track.setRotation(this.hull.rotation);
+                        track.setDepth(0);
+                        track.setAlpha(0.5);
+                        this.lastTrackPos = { x: this.hull.x, y: this.hull.y };
+                    }
+                }
             } destroy() {
                 this.hull.destroy(); this.turret.destroy();
                 this.active = false;
             }
         } class PlayerTank extends Tank {
             constructor(scene, x, y) {
-                super(scene, x,
-                    y, 'tankBody_blue_outline.png', 'tankBlue_barrel1_outline.png'); this.speed = 150;
+                super(scene, x, y, 'tankBody_blue_outline.png', 'tankBlue_barrel1_outline.png', 'tracksDouble.png');
+                this.speed = 150;
             } update(time, cursors,
                 pointer) {
                 if (!this.active) return; if (activePowerup && time > activePowerup.endTime) {
@@ -723,7 +746,7 @@
                 this.turret.rotation = targetAngle + Math.PI / 2;
 
                 if (shouldFire && time > this.lastFired) {
-                    let fireDelay = 800;
+                    let fireDelay = 1500;
                     let isRapid = false;
                     let isMulti = false;
                     let isPower = false;
@@ -787,7 +810,7 @@
 
         class SentryTank extends Tank {
             constructor(scene, path) {
-                super(scene, path[0].x, path[0].y, 'tankBody_darkLarge_outline.png', 'tankDark_barrel1_outline.png');
+                super(scene, path[0].x, path[0].y, 'tankBody_darkLarge_outline.png', 'tankDark_barrel1_outline.png', 'tracksLarge.png');
                 this.patrolPath = path;
                 this.patrolIndex = 0;
                 this.speed = 80;
@@ -1081,6 +1104,8 @@
             this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
             this.cameras.main.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
 
+            this.tracks = this.add.group();
+
             this.tileGrid = [];
             const cols = Math.ceil(LEVEL_WIDTH / 64);
             const rows = Math.ceil(LEVEL_HEIGHT / 64);
@@ -1255,6 +1280,9 @@
             obstacles.clear(true, true);
             hazards.clear(true, true);
             bullets.clear(true, true);
+            if (this.tracks) {
+                this.tracks.clear(true, true);
+            }
             if (sentries.length > 0) {
                 sentries.forEach(s => s.destroy());
             }
