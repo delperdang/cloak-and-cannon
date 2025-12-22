@@ -752,7 +752,10 @@
                     shouldFire = pointer.isDown;
                 } else {
                     if (rightStick && rightStick.force > 0) {
-                        targetAngle = rightStick.rotation;
+                        const touchDuration = Date.now() - (rightStick.clickStartTime || 0);
+                        if (touchDuration > 200) {
+                            targetAngle = rightStick.rotation;
+                        }
                     }
                     if (manualFireRequested) {
                         shouldFire = true;
