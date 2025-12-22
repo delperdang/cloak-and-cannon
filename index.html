@@ -677,6 +677,7 @@
                         track.setRotation(this.hull.rotation);
                         track.setDepth(0);
                         track.setAlpha(0.5);
+                        track.creationTime = this.scene.time.now;
                         this.lastTrackPos = { x: this.hull.x, y: this.hull.y };
                     }
                 }
@@ -860,6 +861,8 @@
                             this.state = 'CHASE';
                             this.lastKnownPosition = { x: player.hull.x, y: player.hull.y };
                             this.alertUI();
+                        } else {
+                            this.scanForTracks();
                         }
                         break;
                     case 'CHASE':
@@ -1047,6 +1050,42 @@
                 this.hull.rotation = Phaser.Math.Angle.RotateTo(this.hull.rotation, desiredRotation, 0.1);
 
                 if (this.state === 'PATROL') this.turret.rotation = this.hull.rotation;
+            }
+
+            scanForTracks() {
+                if (!this.scene.tracks) return;
+
+                let freshestTrack = null;
+                let maxTime = 0;
+
+                this.scene.tracks.children.each(track => {
+                    const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, track.x, track.y);
+                    if (dist < this.visionRange) {
+                        const angleToTrack = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, track.x, track.y);
+                        const facingAngle = this.turret.rotation - Math.PI / 2;
+                        let diff = Phaser.Math.Angle.Wrap(angleToTrack - facingAngle);
+
+                        if (Math.abs(diff) < this.visionAngle / 2) {
+                            const line = new Phaser.Geom.Line(this.hull.x, this.hull.y, track.x, track.y);
+                            let blocked = false;
+                            obstacles.getChildren().forEach(obs => {
+                                if (Phaser.Geom.Intersects.LineToRectangle(line, obs.body)) blocked = true;
+                            });
+
+                            if (!blocked) {
+                                if (track.creationTime > maxTime) {
+                                    maxTime = track.creationTime;
+                                    freshestTrack = track;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                if (freshestTrack) {
+                    this.state = 'CHASE';
+                    this.lastKnownPosition = { x: freshestTrack.x, y: freshestTrack.y };
+                }
             }
 
             canSeePlayer(player) {
@@ -1672,7 +1711,21 @@
         } function
             update(time, delta) {
             if (isMissionComplete) return;
-            player.update(time, cursors, this.input.activePointer);
+            if (this.tracks) {
+                const now = this.time.now;
+                this.tracks.children.each(track => {
+                    const age = now - track.creationTime;
+                    if (age > 5000) {
+                        track.destroy();
+                    } else {
+                        track.setAlpha(0.5 * (1 - age / 5000));
+                    }
+                });
+            }
+
+            if (player) {
+                player.update(time, cursors, this.input.activePointer);
+            }
             sentries.forEach(s => s.update(time, player));
 
             rayGraphics.clear();
