@@ -1,4 +1,27 @@
 <!DOCTYPE html>
+<!--
+    MIT License
+
+    Copyright (c) 2025 Steven Delperdang
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+-->
 <html lang="en">
 
 <head>
@@ -12,54 +35,85 @@
     <link rel="icon" href="https://imagedelivery.net/PwwFoxX145pJ1GHCG1Npzg/74faf358-754d-4a62-9543-a9bb6106aa00/public"
         type="image/svg+xml">
     <style>
+        /* 
+         * Typography: Using 'Orbitron' for a sci-fi/futuristic aesthetic.
+         * We import weights 400 (regular) and 700 (bold).
+         */
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
+        /* 
+         * Global Reset & Layout 
+         * The body is a flex container to center the game canvas on the screen.
+         * Background is nearly black (#050505) for high contrast with the game content.
+         */
         body {
             margin: 0;
             padding: 0;
             background-color: #050505;
             display: flex;
             justify-content: center;
+            /* Horizontally center */
             align-items: center;
+            /* Vertically center */
             height: 100vh;
+            /* Full viewport height */
             overflow: hidden;
+            /* Prevent scrollbars if content overflows slightly */
             font-family: 'Orbitron', sans-serif;
             color: #ecf0f1;
+            /* Off-white text color for readability */
         }
 
+        /* 
+         * Game Container
+         * Holds the Phaser canvas and UI overlays.
+         * Position relative allows absolute children (UI layers) to position themselves relative to this box.
+         */
         #game-container {
             position: relative;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            /* Depth effect */
             border: none;
             width: 100%;
             height: 100vh;
         }
 
+        /* 
+         * UI Layer (Top Left)
+         * Contains persistent HUD elements like Crew Status.
+         * 'pointer-events: none' ensures clicks pass through to the game canvas below (unless on interactive children).
+         */
         #ui-layer {
             position: absolute;
             top: 10px;
             left: 10px;
             width: 200px;
             background: rgba(10, 15, 20, 0.85);
+            /* Semi-transparent dark background */
             backdrop-filter: blur(5px);
+            /* 'Frosted glass' effect for modern UI feel */
             border: 1px solid rgba(100, 200, 255, 0.2);
             border-radius: 4px;
             padding: 10px;
             pointer-events: none;
+            /* Critical: Lets mouse clicks reach the game canvas */
         }
 
         h2 {
             margin: 0 0 10px 0;
             font-size: 16px;
             color: #00d2ff;
+            /* Cyan accent color */
             text-transform: uppercase;
             border-bottom: 1px solid rgba(0, 210, 255, 0.3);
             padding-bottom: 5px;
         }
 
+        /* Crew Member Status Row */
         .crew-member {
             display: flex;
             justify-content: space-between;
+            /* Spreads name and status to edges */
             font-size: 12px;
             margin-bottom: 5px;
             color: #bdc3c7;
@@ -67,17 +121,26 @@
 
         .crew-role {
             color: #7f8c8d;
+            /* Muted color for secondary info */
             font-size: 10px;
         }
 
+        /* Status Indicators */
         .status-ok {
             color: #2ecc71;
+            /* Green */
         }
 
         .status-alert {
             color: #e74c3c;
+            /* Red */
         }
 
+        /* 
+         * Mission Status Overlay (Center Screen)
+         * Used for "Mission Start", "Failed", etc.
+         * absolute + transform technique creates perfect centering.
+         */
         #mission-status {
             position: absolute;
             top: 50%;
@@ -90,11 +153,18 @@
             font-size: 24px;
             font-weight: bold;
             display: none;
+            /* Hidden by default */
             text-align: center;
             z-index: 1000;
+            /* Ensure it sits above game objects */
             pointer-events: none;
         }
 
+        /* 
+         * Powerup Selection Modal
+         * Full-screen overlay for picking upgrades between levels.
+         * Uses Flexbox (column) to center content.
+         */
         #powerup-selection-overlay {
             position: absolute;
             top: 0;
@@ -103,12 +173,15 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.9);
             display: none;
+            /* Hidden by default */
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 2000;
+            /* Highest priority */
         }
 
+        /* Interactive Upgrade Card */
         .powerup-card {
             background: rgba(20, 20, 20, 0.9);
             border: 2px solid #333;
@@ -118,6 +191,7 @@
             width: 300px;
             cursor: pointer;
             transition: all 0.2s;
+            /* Smooth hover effects */
             text-align: center;
             color: #ecf0f1;
         }
@@ -126,6 +200,7 @@
             border-color: #3498db;
             background: rgba(40, 40, 60, 0.9);
             transform: translateY(-2px);
+            /* Subtle lift effect */
         }
 
         .powerup-title {
@@ -149,16 +224,22 @@
             line-height: 1.4;
         }
 
+        /* 
+         * Powerup HUD (Bottom/Top Center?)
+         * Currently positioned relative to top (based on top: 60px).
+         */
         #powerup-hud {
             position: absolute;
             top: 60px;
             left: 50%;
             transform: translateX(-50%);
+            /* Center horizontally */
             display: flex;
             gap: 10px;
             z-index: 500;
         }
 
+        /* Individual Powerup Slot Box */
         .powerup-slot {
             width: 40px;
             height: 40px;
@@ -179,11 +260,14 @@
             color: #ecf0f1;
         }
 
+        /* Active state (currently selected/running powerup) */
         .powerup-slot.active {
             border-color: #f1c40f;
             box-shadow: 0 0 10px #f1c40f;
+            /* Glow effect */
         }
 
+        /* Used/Depleted state */
         .powerup-slot.used {
             opacity: 0.3;
             filter: grayscale(100%);
@@ -194,6 +278,7 @@
             cursor: default;
         }
 
+        /* Visual distinction for slot types */
         .slot-cannon {
             border-bottom: 2px solid #e74c3c;
         }
@@ -202,6 +287,7 @@
             border-bottom: 2px solid #9b59b6;
         }
 
+        /* Keyboard shortcut indicator (1-0) */
         .slot-key {
             position: absolute;
             top: -18px;
@@ -214,6 +300,7 @@
             border-radius: 4px;
         }
 
+        /* Duration bar for active powerups */
         .active-timer-bar {
             position: absolute;
             bottom: 0;
@@ -224,6 +311,10 @@
             transition: width 0.1s linear;
         }
 
+        /* 
+         * Responsiveness 
+         * Adjust layouts for tablets/phones.
+         */
         @media (max-width: 800px) {
             #selection-container {
                 flex-direction: column;
@@ -236,6 +327,7 @@
             }
         }
 
+        /* Hide complex UI on smaller screens if needed */
         @media (max-width: 1024px) {
             #ui-layer {
                 display: none;
@@ -317,8 +409,25 @@
         src="https://cdn.jsdelivr.net/gh/rexrainbow/phaser3-rex-notes@master/dist/rexvirtualjoystickplugin.min.js"></script>
 
     <script>
+        /**
+         * CLOAK & CANNON
+         * 
+         * Main Game Logic
+         * Built with Phaser 3 (HTML5 Game Framework).
+         * 
+         * Architecture:
+         * - Single Scene Architecture ('create', 'update', 'preload').
+         * - Entity-Component-System (ECS) style usage via Phaser Groups (bullets, obstacles).
+         * - Custom Classes: PlayerTank, SentryTank, Bullet.
+         * 
+         * @author [Your Name/Company]
+         * @version 1.0.0
+         */
+
+        // External asset URL for spritesheet
         const ASSET_URL = 'https://imagedelivery.net/PwwFoxX145pJ1GHCG1Npzg/2725ffe6-68a3-4f76-e90b-7dd61b44ac00/public';
 
+        // Texture Atlas Definition: Maps frame names to x,y,w,h on the spritesheet.
         const ATLAS_JSON = {
             "frames": {
                 "barrelBlack_side.png": { "frame": { "x": 513, "y": 407, "w": 20, "h": 28 } },
@@ -511,20 +620,25 @@
             }
         };
 
+        /**
+         * Phaser Game Configuration
+         * Sets up the physics engine (Arcade), scaling mode (Fit to screen),
+         * and registers the Virtual Joystick plugin for mobile support.
+         */
         const config = {
-            type: Phaser.AUTO,
+            type: Phaser.AUTO, // WebGL if available, Canvas fallback
             scale: {
-                mode: Phaser.Scale.FIT,
+                mode: Phaser.Scale.FIT, // Scale to fit window while keeping aspect ratio
                 autoCenter: Phaser.Scale.CENTER_BOTH,
                 width: window.innerWidth,
                 height: window.innerHeight,
             },
-            parent: 'game-container',
+            parent: 'game-container', // DOM Element ID
             physics: {
                 default: 'arcade',
                 arcade: {
-                    debug: false,
-                    gravity: { y: 0 }
+                    debug: false, // Set to true to see hitboxes
+                    gravity: { y: 0 } // Top-down game, so no Y gravity
                 }
             },
             plugins: {
@@ -544,24 +658,36 @@
 
         const game = new Phaser.Game(config);
 
-        let player;
-        let cursors;
-        let bullets;
-        let obstacles;
-        let hazards;
-        let sentries = [];
-        let sentryHulls;
-        let objective;
-        let extractionZone;
+        // --- GLOBAL GAME STATE ---
+
+        // Entities
+        let player;                // Reference to the PlayerTank instance
+        let sentries = [];         // Array of SentryTank instances (AI)
+        let sentryHulls;           // Phaser Physics Group for Sentry Hulls (for collisions)
+        let bullets;               // Phaser Physics Group for all projectiles
+        let mines;                 // Phaser Physics Group for landmines
+        let obstacles;             // Static Group for crates/walls
+        let hazards;               // Static Group for dangerous terrain (if any)
+
+        // Input Controls
+        let cursors;               // Keyboard cursor keys
+        let leftStick;             // Mobile Virtual Joystick (Movement)
+        let rightStick;            // Mobile Virtual Joystick (Aiming)
+        let isFireButtonDown = false;
+        let manualFireRequested = false; // Mobile trigger flag
+
+        // Level Objective State
+        let objective;             // The "flag" or item to collect
+        let extractionZone;        // Zone to reach after collecting objective
         let isObjectiveCollected = false;
         let isMissionComplete = false;
-        let rayGraphics;
-        let leftStick;
-        let rightStick;
-        let debugGraphics;
-        let mines;
-        let isFireButtonDown = false;
-        let manualFireRequested = false;
+        let currentLevel = 1;
+
+        // Visuals / Debugging
+        let rayGraphics;           // Graphics object for drawing vision cones
+        let debugGraphics;         // General debug drawing
+
+        // --- POWERUP SYSTEM CONSTANTS ---
         const POWERUPS = {
             CANNON: {
                 RAPID_FIRE: { id: 'RAPID_FIRE', name: 'Rapid Fire', desc: 'Significantly increases fire rate.', type: 'CANNON' },
@@ -575,7 +701,7 @@
                     type: 'CANNON'
                 }
             },
-            CLOAK: {
+            CLOAK: { // Defensive / Utility
                 SCRAMBLE: {
                     id: 'SCRAMBLE', name: 'Scramble', desc: 'Enemies drive erratically and cannot target you.', type:
                         'CLOAK'
@@ -590,24 +716,37 @@
         const CANNON_KEYS = Object.keys(POWERUPS.CANNON);
         const CLOAK_KEYS = Object.keys(POWERUPS.CLOAK);
 
-        let activePowerup = null;
-        let inventory = Array(10).fill(null);
-        let usedPowerups = new Set();
-        let currentSelectionOptions = [];
+        // Inventory State
+        let activePowerup = null;   // Currently active buff (e.g., RAPID_FIRE active now)
+        let inventory = Array(10).fill(null); // Slot storage (1-5 cannon, 6-0 cloak)
+        let usedPowerups = new Set(); // Tracks used slots in current level
+        let currentSelectionOptions = []; // Options offered in the inter-level screen
         let isPowerupSelectionActive = false;
 
-        let currentLevel = 1;
-
+        /**
+         * Bullet
+         * Represents a projectile in the game. Handles its own movement, 
+         * bouncing logic (via bounceCount property managed externally), and visual state.
+         * 
+         * @extends Phaser.Physics.Arcade.Sprite
+         */
         class Bullet extends Phaser.Physics.Arcade.Sprite {
             constructor(scene, x, y) {
                 super(scene, x, y, 'tanks', 'bulletBlue3.png');
-                this.bounceCount = 0;
-                this.isPlayerBullet = false;
-                this.isPowerShot = false;
-                this.isPowerShot = false;
-                this.isFlame = false;
+                this.bounceCount = 0;       // Tracks wall bounces 
+                this.isPlayerBullet = false; // Friendly fire prevention
+                this.isPowerShot = false;   // Special property: destroys crates
+                this.isFlame = false;       // Special property: destroys enemy bullets
             }
 
+            /**
+             * Fires the bullet from a specific position and rotation.
+             * @param {number} x - Start X
+             * @param {number} y - Start Y
+             * @param {number} rotation - Rotation in radians
+             * @param {boolean} isPlayerBullet - True if fired by player
+             * @param {Object} options - Special properties (powerShot, flame)
+             */
             fire(x, y, rotation, isPlayerBullet, options = {}) {
                 this.body.reset(x, y);
                 this.setActive(true);
@@ -617,23 +756,29 @@
                 this.isPowerShot = options.powerShot || false;
                 this.isFlame = options.flame || false;
 
+                // Select texture based on type/owner
                 let tex = isPlayerBullet ? 'bulletBlue3.png' : 'bulletRed3.png';
                 if (this.isFlame) tex = 'shotOrange.png';
                 if (this.isPowerShot) tex = 'bulletBlue2_outline.png';
 
                 this.setFrame(tex);
 
+                // Determine speed
                 let speed = 400;
                 if (this.isPowerShot) speed = 600;
                 if (this.isFlame) speed = 300;
 
+                // Position bullet slightly in front of the barrel to avoid self-collision
                 const vec = new Phaser.Math.Vector2();
-                vec.setToPolar(rotation - Math.PI / 2, 40);
+                vec.setToPolar(rotation - Math.PI / 2, 40); // Offset by 40px
                 this.setPosition(x + vec.x, y + vec.y);
 
+                // Set Physics Velocity
+                // -90 degrees (PI/2) adjustment because 0 deg is 'Right' in Phaser, but 'Up' in our art
                 this.scene.physics.velocityFromRotation(rotation - Math.PI / 2, speed, this.body.velocity);
                 this.bounceCount = 0;
 
+                // Flame thrower projectiles have a short lifespan
                 if (this.isFlame) {
                     this.scene.time.delayedCall(500, () => {
                         if (this.active) this.reset();
@@ -642,34 +787,60 @@
             }
 
             update(time, delta) {
-
-            } reset() {
-                this.setActive(false); this.setVisible(false); this.body.stop();
-                this.isPowerShot = false; this.isFlame = false;
+                // Determine if bullet should be culled if it leaves world
+                // (Phaser handles this with collideWorldBounds, or we can add custom logic here)
             }
-        } class Tank {
+
+            /** Deactivates the bullet, returning it to the pool. */
+            reset() {
+                this.setActive(false);
+                this.setVisible(false);
+                this.body.stop();
+                this.isPowerShot = false;
+                this.isFlame = false;
+            }
+        }
+
+        /**
+         * Tank
+         * Base class for both Player and Sentry tanks.
+         * Manages the "Two-Sprite" system: 
+         * 1. Hull (Physics body, moves/rotates)
+         * 2. Turret (Visual only, follows hull position but rotates independently)
+         */
+        class Tank {
             constructor(scene, x, y, textureBody, textureBarrel, trackTexture) {
                 this.scene = scene;
                 this.x = x;
                 this.y = y;
+
+                // 1. Setup Hull (Physics Body)
                 this.hull = scene.physics.add.sprite(x, y, 'tanks', textureBody);
-                this.hull.setDrag(100);
-                this.hull.setAngularDrag(100);
-                this.hull.setMaxVelocity(200);
+                this.hull.setDrag(100);             // Air resistance
+                this.hull.setAngularDrag(100);      // Rotation friction
+                this.hull.setMaxVelocity(200);      // Speed cap
                 this.hull.setCollideWorldBounds(true);
+
+                // 2. Setup Turret (Visual Attachment)
                 this.turret = scene.add.sprite(x, y, 'tanks', textureBarrel);
-                this.turret.setOrigin(0.5, 0.7);
+                this.turret.setOrigin(0.5, 0.7);    // Pivot point
+
                 this.lastFired = 0;
                 this.active = true;
+
+                // Track generation
                 this.trackTexture = trackTexture;
                 this.lastTrackPos = { x: x, y: y };
             }
 
             update() {
                 if (!this.active) return;
+
+                // Sync turret position to hull
                 this.turret.x = this.hull.x;
                 this.turret.y = this.hull.y;
 
+                // Create Tread Marks
                 if (this.trackTexture && this.scene.tracks) {
                     const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, this.lastTrackPos.x, this.lastTrackPos.y);
                     if (dist > 30) {
@@ -681,20 +852,35 @@
                         this.lastTrackPos = { x: this.hull.x, y: this.hull.y };
                     }
                 }
-            } destroy() {
-                this.hull.destroy(); this.turret.destroy();
+            }
+
+            destroy() {
+                this.hull.destroy();
+                this.turret.destroy();
                 this.active = false;
             }
-        } class PlayerTank extends Tank {
+        }
+        /**
+        * PlayerTank
+        * Handles user input (keyboard/touch), movement physics, and firing logic.
+        * Also manages powerup duration and effects.
+        */
+        class PlayerTank extends Tank {
             constructor(scene, x, y) {
                 super(scene, x, y, 'tankBody_blue_outline.png', 'tankBlue_barrel1_outline.png', 'tracksDouble.png');
-                this.speed = 150;
-            } update(time, cursors,
-                pointer) {
-                if (!this.active) return; if (activePowerup && time > activePowerup.endTime) {
+                this.speed = 150; // Base movement speed
+            }
+
+            update(time, cursors, pointer) {
+                if (!this.active) return;
+
+                // --- POWERUP MANAGEMENT ---
+                // Check if active powerup has expired
+                if (activePowerup && time > activePowerup.endTime) {
                     activePowerup = null;
                     updateHUD();
 
+                    // Reset stats/visuals to default
                     this.hull.setAlpha(1);
                     this.turret.setAlpha(1);
                     this.isDisguised = false;
@@ -704,18 +890,21 @@
                     if (this.shieldInfo) this.shieldInfo.clear();
                 }
 
+                // Draw Shield Visual if active
                 if (this.isShielded && this.shieldInfo) {
                     this.shieldInfo.clear();
                     this.shieldInfo.lineStyle(2, 0x00ffff, 1);
                     this.shieldInfo.strokeCircle(this.hull.x, this.hull.y, 40);
                 }
 
-                super.update();
+                super.update(); // Call base update (sync turret, tracks)
 
-                this.hull.setVelocity(0);
+                // --- MOVEMENT LOGIC ---
+                this.hull.setVelocity(0); // Reset velocity every frame (arcade physics)
 
                 const velocity = new Phaser.Math.Vector2();
 
+                // 1. Keyboard Input
                 if (cursors.left.isDown || cursors.a.isDown) {
                     velocity.x -= 1;
                 } else if (cursors.right.isDown || cursors.d.isDown) {
@@ -728,10 +917,14 @@
                     velocity.y += 1;
                 }
 
+                // 2. Terrain Modifier
+                // Sand slows you down (.6x), Grass is normal (1.0x)
                 const terrainMultiplier = this.scene.getTerrainSpeedMultiplier ?
                     this.scene.getTerrainSpeedMultiplier(this.hull.x, this.hull.y) : 1;
                 const currentSpeed = this.speed * terrainMultiplier;
 
+                // 3. Apply Velocity
+                // Prioritize Touch Joystick if active, else Keyboard
                 if (velocity.length() === 0 && leftStick && leftStick.force > 0) {
                     this.scene.physics.velocityFromRotation(leftStick.rotation, leftStick.force * currentSpeed, velocity);
                 } else if (velocity.length() > 0) {
@@ -741,20 +934,24 @@
                 if (velocity.length() > 0) {
                     this.hull.setVelocity(velocity.x, velocity.y);
 
+                    // Smoothly rotate hull towards movement direction
                     const angle = velocity.angle();
                     this.hull.rotation = Phaser.Math.Angle.RotateTo(this.hull.rotation, angle + Math.PI / 2, 0.1);
                 }
 
+                // --- AIMING LOGIC ---
                 let targetAngle = this.turret.rotation - Math.PI / 2;
                 let shouldFire = false;
 
                 if (this.scene.sys.game.device.os.desktop) {
+                    // Desktop: Mouse Aim
                     targetAngle = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, pointer.worldX, pointer.worldY);
                     shouldFire = pointer.isDown;
                 } else {
+                    // Mobile: Right Stick Aim
                     if (rightStick && rightStick.force > 0) {
                         const touchDuration = Date.now() - (rightStick.clickStartTime || 0);
-                        if (touchDuration > 200) {
+                        if (touchDuration > 200) { // Threshold to distinguish tap from hold
                             targetAngle = rightStick.rotation;
                         }
                     }
@@ -766,21 +963,24 @@
 
                 this.turret.rotation = targetAngle + Math.PI / 2;
 
+                // --- FIRING LOGIC ---
                 if (shouldFire && time > this.lastFired) {
-                    let fireDelay = 1500;
+                    let fireDelay = 4000; // Default cooldown
                     let isRapid = false;
                     let isMulti = false;
                     let isPower = false;
                     let isFlame = false;
 
+                    // Apply modifiers from Powerups
                     if (activePowerup && activePowerup.type.type === 'CANNON') {
                         const pid = activePowerup.type.id;
-                        if (pid === 'RAPID_FIRE') { isRapid = true; fireDelay = 150; }
+                        if (pid === 'RAPID_FIRE') { isRapid = true; fireDelay = 200; }
                         if (pid === 'MULTI_SHOT') isMulti = true;
-                        if (pid === 'POWER_SHOT') { isPower = true; fireDelay = 500; }
+                        if (pid === 'POWER_SHOT') { isPower = true; fireDelay = 800; }
                         if (pid === 'FLAME_THROWER') { isFlame = true; fireDelay = 100; }
                     } else if (activePowerup && activePowerup.type.type === 'CLOAK') {
-                        activePowerup.endTime = time;
+                        // Firing breaks cloak!
+                        activePowerup.endTime = time; // expire immediately
                         activePowerup = null;
                         updateHUD();
                         this.hull.setAlpha(1);
@@ -794,6 +994,7 @@
 
                     const bulletOptions = { powerShot: isPower, flame: isFlame };
 
+                    // Handle Land Mines special case
                     if (activePowerup && activePowerup.type.id === 'LAND_MINE') {
                         const mine = mines.create(this.hull.x, this.hull.y, 'tanks', 'barrelRed_top.png');
                         mine.setDepth(5);
@@ -801,8 +1002,9 @@
                         return;
                     }
 
+                    // Handle Multi-Shot vs Single Shot
                     if (isMulti) {
-                        const offsets = [-0.2, 0, 0.2];
+                        const offsets = [-0.2, 0, 0.2]; // Radians spread
                         offsets.forEach(off => {
                             const b = bullets.get();
                             if (b) b.fire(this.hull.x, this.hull.y, this.turret.rotation + off, true, bulletOptions);
@@ -816,10 +1018,11 @@
 
                     this.lastFired = time + fireDelay;
 
+                    // Alert sentries caused by noise
                     sentries.forEach(sentry => {
                         if (sentry.active) {
                             const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, sentry.hull.x, sentry.hull.y);
-                            if (dist < 600) {
+                            if (dist < 600) { // Hearing range
                                 sentry.state = 'CHASE'; sentry.lastKnownPosition = { x: this.hull.x, y: this.hull.y };
                                 sentry.alertUI();
                             }
@@ -829,39 +1032,57 @@
             }
         }
 
+        /**
+         * SentryTank
+         * Enemy AI tank controlled by a Finite State Machine (FSM).
+         * 
+         * States:
+         * - PATROL: Move along a predefined path of points.
+         * - CHASE: Pursue the player or last known location.
+         * - STUCK: Attempt to unstuck if movement is blocked for too long.
+         * - ALERT: (Transitional) Not explicitly used as a separate logic block but implied during state transitions.
+         */
         class SentryTank extends Tank {
             constructor(scene, path) {
+                // Sentry tanks use darker textures and 'Large' tracks
                 super(scene, path[0].x, path[0].y, 'tankBody_darkLarge_outline.png', 'tankDark_barrel1_outline.png', 'tracksLarge.png');
-                this.patrolPath = path;
-                this.patrolIndex = 0;
-                this.speed = 80;
-                this.visionRange = 250;
-                this.visionAngle = Phaser.Math.DegToRad(45);
-                this.state = 'PATROL';
+
+                this.patrolPath = path;         // Array of {x, y} waypoints
+                this.patrolIndex = 0;           // Current target index in path
+                this.speed = 80;                // Slower than player
+                this.visionRange = 250;         // Detection radius
+                this.visionAngle = Phaser.Math.DegToRad(45); // FOV (Field of View) cone
+                this.state = 'PATROL';          // Initial State
+
                 this.alertTimer = 0;
-                this.lastKnownPosition = null;
-                this.hull.setData('parent', this);
-                this.rayLength = 100;
+                this.lastKnownPosition = null;  // Memory of where player was seen
+                this.hull.setData('parent', this); // Link Sprite to Class instance for collision callbacks
+
+                this.rayLength = 100;           // Distance for obstacle avoidance feelers
             }
 
             update(time, player) {
                 if (!this.active) return;
-                super.update();
+                super.update(); // Sync turret & tracks
 
                 if (isMissionComplete) return;
 
+                // AI TRIGGER: If player grabs objective, all enemies know immediately (unless already chasing)
                 if (isObjectiveCollected && this.state !== 'CHASE' && this.state !== 'ALERT' && this.state !== 'STUCK') {
                     this.state = 'CHASE';
                 }
 
+                // FSM LOOPS
                 switch (this.state) {
                     case 'PATROL':
                         this.patrolBehavior(time);
+                        // Transition: if player detected, switch to Chase
                         if (this.canSeePlayer(player)) {
                             this.state = 'CHASE';
                             this.lastKnownPosition = { x: player.hull.x, y: player.hull.y };
                             this.alertUI();
                         } else {
+                            // Also check for footprints (Tracks)
                             this.scanForTracks();
                         }
                         break;
@@ -874,31 +1095,39 @@
                 }
             }
 
+            /** Logic for moving between waypoints in a loop */
             patrolBehavior(time) {
                 const target = this.patrolPath[this.patrolIndex];
 
-                this.navigateToward(target, time);
+                this.navigateToward(target, time); // Move with obstacle avoidance
 
+                // Check if reached waypoint (tolerance 20px)
                 const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, target.x, target.y);
                 if (dist < 20) {
                     this.patrolIndex = (this.patrolIndex + 1) % this.patrolPath.length;
                 }
             }
 
+            /** Random wiggling and reversing to get unstuck */
             stuckBehavior(time) {
                 if (time > this.stuckEndTime) {
+                    // Time's up, return to previous state
                     this.state = this.previousState || 'CHASE';
                     this.lastPosCheck = { x: this.hull.x, y: this.hull.y, time: time };
                     return;
                 }
 
+                // Reverse and rotate
                 const velocity = this.scene.physics.velocityFromRotation(this.hull.rotation, -50);
                 this.hull.setVelocity(velocity.x, velocity.y);
                 this.hull.rotation += 0.05;
             }
 
+            /** Logic for pursuing the player */
             chaseBehavior(time, player) {
+                // 1. React to 'SCRAMBLE' powerup (Confusion effect)
                 if (activePowerup && activePowerup.type.id === 'SCRAMBLE') {
+                    // Random erratic movement
                     if (Math.random() < 0.05) {
                         const randAngle = Math.random() * Math.PI * 2;
                         const velocity = this.scene.physics.velocityFromRotation(randAngle, this.speed);
@@ -906,6 +1135,7 @@
                         this.hull.rotation = randAngle + Math.PI / 2;
                         this.turret.rotation = Math.random() * Math.PI * 2;
                     }
+                    // Random firing
                     if (time > this.lastFired && Math.random() < 0.1) {
                         const bullet = bullets.get();
                         if (bullet) {
@@ -916,12 +1146,14 @@
                     return;
                 }
 
+                // 2. Global Alert: Objective stolen -> Permanent knowledge of position
                 if (isObjectiveCollected) {
                     this.lastKnownPosition = { x: player.hull.x, y: player.hull.y };
                 }
 
                 let target = player.hull;
 
+                // 3. React to Decoys (distraction)
                 if (this.scene.decoys && this.scene.decoys.length > 0) {
                     let nearestDecoy = null;
                     let minDist = 10000;
@@ -935,43 +1167,54 @@
                         }
                     });
 
+                    // Prefer decoy if close enough
                     if (nearestDecoy && minDist < this.visionRange * 1.5) {
                         target = nearestDecoy;
                     }
                 }
 
-                if (!player.active && !target.active) return;
+                if (!player.active && !target.active) return; // Nothing to chase
 
+                // 4. Pursuit Logic
                 if (target === player.hull) {
+                    // If we can physically see the player, update memory
                     if (this.canSeePlayer(player)) {
                         this.lastKnownPosition = { x: player.hull.x, y: player.hull.y };
                     } else {
+                        // If we can't see them, go to last known spot
                         if (this.lastKnownPosition) {
                             const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, this.lastKnownPosition.x, this.lastKnownPosition.y);
+                            // If reached last known spot and still no player -> Give up
                             if (dist < 50) {
                                 this.lastKnownPosition = null;
                                 this.state = 'PATROL';
                                 return;
                             }
+                            // Continue to memory
                             this.navigateToward(this.lastKnownPosition, time);
+                            // Look in direction of travel
                             const angle = this.hull.body.velocity.angle();
                             this.turret.rotation = Phaser.Math.Angle.RotateTo(this.turret.rotation, angle + Math.PI / 2, 0.1);
                             return;
                         } else {
+                            // No memory -> Give up
                             this.state = 'PATROL';
                             return;
                         }
                     }
                 }
 
+                // Move towards current target
                 this.navigateToward({ x: target.x, y: target.y }, time);
 
+                // Aim Turret at target
                 const angle = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, target.x, target.y);
                 this.turret.rotation = angle + Math.PI / 2;
 
+                // Fire if aimed roughly correctly
                 const facingAngle = this.hull.rotation - Math.PI / 2;
                 const turretAngle = this.turret.rotation - Math.PI / 2;
-                const diff = Phaser.Math.Angle.Wrap(angle - turretAngle);
+                const diff = Phaser.Math.Angle.Wrap(angle - turretAngle); // Angle difference
 
                 if (Math.abs(diff) < 0.2 && time > this.lastFired) {
                     const bullet = bullets.get();
@@ -982,7 +1225,13 @@
                 }
             }
 
+            /** 
+             * Movement with Raycast-based Obstacle Avoidance 
+             * Casts rays forward, left-diagonal, and right-diagonal.
+             * If blocked, steer away.
+             */
             navigateToward(targetPos, time) {
+                // Stuck check: If we haven't moved much in 1s, trigger STUCK state
                 if (!this.lastPosCheck) {
                     this.lastPosCheck = { x: this.hull.x, y: this.hull.y, time: time };
                 }
@@ -996,9 +1245,11 @@
                     this.lastPosCheck = { x: this.hull.x, y: this.hull.y, time: time };
                 }
 
+                // Desired direction
                 const angleToTarget = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, targetPos.x, targetPos.y);
                 let moveAngle = angleToTarget;
 
+                // Raycast setup
                 const startPoint = new Phaser.Math.Vector2(this.hull.x, this.hull.y);
                 const forwardVec = new Phaser.Math.Vector2().setToPolar(this.hull.rotation - Math.PI / 2, this.rayLength);
                 const forwardRay = new Phaser.Geom.Line(startPoint.x, startPoint.y, startPoint.x + forwardVec.x, startPoint.y + forwardVec.y);
@@ -1006,6 +1257,7 @@
                 let blocked = false;
                 const obs = obstacles.getChildren();
 
+                // Check forward ray
                 for (let i = 0; i < obs.length; i++) {
                     if (Phaser.Geom.Intersects.LineToRectangle(forwardRay, obs[i].body)) {
                         blocked = true;
@@ -1013,6 +1265,7 @@
                     }
                 }
 
+                // Avoidance Logic
                 if (blocked) {
                     const leftVec = new Phaser.Math.Vector2().setToPolar(this.hull.rotation - Math.PI / 2 - 0.7, this.rayLength);
                     const rightVec = new Phaser.Math.Vector2().setToPolar(this.hull.rotation - Math.PI / 2 + 0.7, this.rayLength);
@@ -1029,29 +1282,33 @@
                     }
 
                     if (leftBlocked && !rightBlocked) {
-                        moveAngle += 1.2;
+                        moveAngle += 1.2; // Steer right
                     } else if (rightBlocked && !leftBlocked) {
-                        moveAngle -= 1.2;
+                        moveAngle -= 1.2; // Steer left
                     } else if (leftBlocked && rightBlocked) {
-                        moveAngle += Math.PI;
+                        moveAngle += Math.PI; // Turn around
                     } else {
+                        // Forward blocked but sides clear? Steer towards target side
                         const diff = Phaser.Math.Angle.Wrap(angleToTarget - (this.hull.rotation - Math.PI / 2));
                         moveAngle += (diff > 0 ? 1.0 : -1.0);
                     }
                 }
 
+                // Apply Movement
                 const terrainMultiplier = this.scene.getTerrainSpeedMultiplier ? this.scene.getTerrainSpeedMultiplier(this.hull.x, this.hull.y) : 1;
                 const currentSpeed = this.speed * terrainMultiplier;
 
                 const velocity = this.scene.physics.velocityFromRotation(moveAngle, currentSpeed);
                 this.hull.setVelocity(velocity.x, velocity.y);
 
+                // Rotate hull towards movement
                 const desiredRotation = moveAngle + Math.PI / 2;
                 this.hull.rotation = Phaser.Math.Angle.RotateTo(this.hull.rotation, desiredRotation, 0.1);
 
                 if (this.state === 'PATROL') this.turret.rotation = this.hull.rotation;
             }
 
+            // Detect Player Tracks for tracking behavior
             scanForTracks() {
                 if (!this.scene.tracks) return;
 
@@ -1060,12 +1317,14 @@
 
                 this.scene.tracks.children.each(track => {
                     const dist = Phaser.Math.Distance.Between(this.hull.x, this.hull.y, track.x, track.y);
-                    if (dist < this.visionRange) {
+                    if (dist < this.visionRange) { // Only tracks within range
                         const angleToTrack = Phaser.Math.Angle.Between(this.hull.x, this.hull.y, track.x, track.y);
                         const facingAngle = this.turret.rotation - Math.PI / 2;
                         let diff = Phaser.Math.Angle.Wrap(angleToTrack - facingAngle);
 
+                        // Only tracks in front (Vision Cone)
                         if (Math.abs(diff) < this.visionAngle / 2) {
+                            // Line of Sight check to track
                             const line = new Phaser.Geom.Line(this.hull.x, this.hull.y, track.x, track.y);
                             let blocked = false;
                             obstacles.getChildren().forEach(obs => {
@@ -1088,9 +1347,16 @@
                 }
             }
 
+            /** 
+             * Vision Check 
+             * 1. Distance check
+             * 2. Angle check (Vision Cone)
+             * 3. Line of sight check (Raycast vs Obstacles)
+             */
             canSeePlayer(player) {
                 if (!player.active) return false;
 
+                // Stealth modifiers
                 if (player.isDisguised) return false;
                 if (activePowerup && activePowerup.type.id === 'INVISIBLE') return false;
 
@@ -1112,6 +1378,7 @@
                 return false;
             }
 
+            /** Helper to flash UI/Text when player is spotted */
             alertUI() {
                 const startColor = Phaser.Display.Color.ValueToColor(0xffffff);
                 const endColor = Phaser.Display.Color.ValueToColor(0xff0000);
@@ -1143,97 +1410,127 @@
             }
         }
 
+        /**
+         * Preload Assets
+         * Loads the main spritesheet from the remote URL.
+         */
         function preload() {
             this.load.image('tanks_sheet', ASSET_URL);
         }
 
+        /**
+         * Create Game Scene
+         * Initializes the game world, physics, inputs, and starts the first level.
+         */
         function create() {
-            this.textures.addAtlas('tanks',
-                this.textures.get('tanks_sheet').source[0].image, ATLAS_JSON);
+            // 1. Parse Texture Atlas
+            this.textures.addAtlas('tanks', this.textures.get('tanks_sheet').source[0].image, ATLAS_JSON);
 
+            // 2. Setup Input
             cursors = this.input.keyboard.createCursorKeys();
             cursors.w = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
             cursors.a = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
             cursors.s = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
             cursors.d = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
 
+            // 3. World Bounds & Camera
             const LEVEL_WIDTH = 1600;
             const LEVEL_HEIGHT = 1200;
-
             this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
             this.cameras.main.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
 
+            // 4. Background Generation (Grid-based)
             this.tracks = this.add.group();
-
             this.tileGrid = [];
             const cols = Math.ceil(LEVEL_WIDTH / 64);
             const rows = Math.ceil(LEVEL_HEIGHT / 64);
 
             for (let y = 0; y < rows; y++) {
-                this.tileGrid[y] = []; for (let x = 0; x < cols; x++) {
-                    const
-                        isSand = Math.random() < 0.3; const tileType = isSand ? (Math.random() < 0.5 ? 'tileSand1.png'
-                            : 'tileSand2.png') : (Math.random() < 0.5 ? 'tileGrass1.png' : 'tileGrass2.png');
+                this.tileGrid[y] = [];
+                for (let x = 0; x < cols; x++) {
+                    const isSand = Math.random() < 0.3;
+                    const tileType = isSand
+                        ? (Math.random() < 0.5 ? 'tileSand1.png' : 'tileSand2.png')
+                        : (Math.random() < 0.5 ? 'tileGrass1.png' : 'tileGrass2.png');
+
                     this.add.image(x * 64 + 32, y * 64 + 32, 'tanks', tileType).setTint(0x777777);
                     this.tileGrid[y][x] = isSand ? 'sand' : 'grass';
                 }
-            } this.getTerrainSpeedMultiplier = (x, y) => {
+            }
+
+            // Terrain Speed Lookup Helper
+            this.getTerrainSpeedMultiplier = (x, y) => {
                 const col = Math.floor(x / 64);
                 const row = Math.floor(y / 64);
                 if (row >= 0 && row < this.tileGrid.length && col >= 0 && col < this.tileGrid[0].length) {
                     return this.tileGrid[row][col] === 'sand' ? 0.6 : 1.0;
-                } return 1.0;
+                }
+                return 1.0;
             };
-            obstacles = this.physics.add.staticGroup(); hazards = this.physics.add.staticGroup();
+
+            // 5. Physics Groups
+            obstacles = this.physics.add.staticGroup();
+            hazards = this.physics.add.staticGroup();
             bullets = this.physics.add.group({
-                classType: Bullet, maxSize: 50, runChildUpdate:
-                    false
-            }); sentryHulls = this.physics.add.group(); sentries = [];
+                classType: Bullet,
+                maxSize: 50,
+                runChildUpdate: false // Manual update for bullets if needed, but they use their own update
+            });
+            sentryHulls = this.physics.add.group();
+            sentries = [];
+            mines = this.physics.add.group(); // Initialize landmines group
+
+            // 6. Collision Implementations
+
+            // Bullets vs Obstacles
             this.physics.add.collider(bullets, obstacles, (bullet, obstacle) => {
                 if (!bullet.active) return;
 
+                // Power Shot destroys trees/crates instantly
                 if (bullet.isPowerShot) {
                     this.add.particles(obstacle.x, obstacle.y, 'tanks', {
-                        frame: 'explosion1.png',
-                        speed: 50,
-                        scale: { start: 1, end: 0 },
-                        duration: 500,
-                        maxParticles: 10
+                        frame: 'explosion1.png', speed: 50, scale: { start: 1, end: 0 }, duration: 500, maxParticles: 10
                     });
-                    obstacle.destroy();
                     obstacle.destroy();
                     return;
                 }
 
+                // Normal bullets vs CrateWood (breaks it)
                 if (obstacle.frame.name.includes('crateWood')) {
                     obstacle.destroy();
                     bullet.reset();
                     return;
                 }
 
+                // Bounce logic
                 if (bullet.bounceCount < 1) {
-                    bullet.bounceCount++; const body = bullet.body; if
-                        (body.touching.up || body.touching.down) body.velocity.y *= -1; if
-                        (body.touching.left || body.touching.right) body.velocity.x *= -1;
+                    bullet.bounceCount++;
+                    const body = bullet.body;
+                    if (body.touching.up || body.touching.down) body.velocity.y *= -1;
+                    if (body.touching.left || body.touching.right) body.velocity.x *= -1;
                     bullet.rotation = body.velocity.angle() + Math.PI / 2;
                 } else {
-                    bullet.reset(); if
-                        (obstacle.texture.key === 'tanks' && obstacle.frame.name.includes('crate')) {
+                    bullet.reset();
+                    // If 2nd hit is on a crate, maybe destroy it?
+                    if (obstacle.texture.key === 'tanks' && obstacle.frame.name.includes('crate')) {
                         obstacle.destroy();
                     }
                 }
             }, (bullet, obstacle) => {
+                // Trees are low obstacles, projectiles fly over them
                 if (obstacle.frame.name === 'treeGreen_small.png') return false;
                 return true;
             });
 
-
+            // 7. Graphics & UI
             rayGraphics = this.add.graphics();
             debugGraphics = this.add.graphics().setDepth(100);
 
             createMobileControls.call(this);
 
+            // 8. Debug/Cheat Keys
             this.input.keyboard.on('keydown', (event) => {
+                // Unlock all powerups
                 if (event.key === '`' || event.key === '~') {
                     inventory.fill(null);
                     let idx = 0;
@@ -1244,6 +1541,7 @@
                     return;
                 }
 
+                // Activate powerup by number key
                 const key = parseInt(event.key);
                 if (!isNaN(key)) {
                     const idx = (key === 0) ? 9 : key - 1;
@@ -1254,164 +1552,214 @@
             startLevel.call(this, currentLevel);
         }
 
+        /**
+         * Activates a powerup from the inventory.
+         * Handles both instant duration-based buffs (Shield, Invisibility)
+         * and toggleable states.
+         * @param {number} index - Inventory slot index (0-9)
+         */
         function activatePowerup(index) {
-            if (activePowerup) return;
-            if (!inventory[index]) return;
-            if (usedPowerups.has(index)) return;
+            if (activePowerup) return; // Only one active at a time
+            if (!inventory[index]) return; // Slot empty
+            if (usedPowerups.has(index)) return; // Already used in this level
 
             const p = inventory[index];
+
+            // Set global active state
             activePowerup = {
                 type: p,
-                endTime: this.time.now + 10000,
+                endTime: this.time.now + 10000, // 10 seconds duration
                 startTime: this.time.now
             };
 
             updateHUD();
 
+            // Mark as used
             usedPowerups.add(index);
             updateHUD();
 
             if (player) {
-                if (p.id === 'INVISIBLE') {
-                    player.hull.setAlpha(0.2);
-                    player.turret.setAlpha(0.2);
-                } else if (p.id === 'DISGUISE') {
-                    player.isDisguised = true;
-                    player.hull.setTexture('tanks', 'tankBody_darkLarge.png');
-                    player.turret.setTexture('tanks',
-                        'tankDark_barrel1_outline.png');
-                } else if (p.id === 'SHIELD') {
-                    player.isShielded = true;
-                    if (!player.shieldInfo) {
-                        player.shieldInfo = this.add.graphics();
-                    }
-                } else if (p.id === 'DECOY') {
-                    const decoy = this.add.sprite(player.hull.x, player.hull.y,
-                        'tanks', 'tankBody_blue_outline.png');
-                    decoy.turret = this.add.sprite(player.hull.x, player.hull.y,
-                        'tanks', 'tankBlue_barrel1_outline.png');
-                    decoy.turret.setOrigin(0.5, 0.7);
-                    decoy.isDecoy = true;
-
-                    if (!this.decoys) this.decoys = [];
-                    this.decoys.push(decoy);
-
-                    this.time.delayedCall(10000, () => {
-                        if (decoy.active) {
-                            decoy.destroy();
-                            if (decoy.turret) decoy.turret.destroy();
+                // Apply visual/logic effects immediately for CLOAK types
+                switch (p.id) {
+                    case 'INVISIBLE':
+                        player.hull.setAlpha(0.2);
+                        player.turret.setAlpha(0.2);
+                        break;
+                    case 'DISGUISE':
+                        player.isDisguised = true;
+                        player.hull.setTexture('tanks', 'tankBody_darkLarge.png');
+                        player.turret.setTexture('tanks', 'tankDark_barrel1_outline.png');
+                        break;
+                    case 'SHIELD':
+                        player.isShielded = true;
+                        if (!player.shieldInfo) {
+                            player.shieldInfo = this.add.graphics();
                         }
-                    });
+                        break;
+                    case 'DECOY':
+                        // Spawn a distraction sprite
+                        const decoy = this.add.sprite(player.hull.x, player.hull.y, 'tanks', 'tankBody_blue_outline.png');
+                        decoy.turret = this.add.sprite(player.hull.x, player.hull.y, 'tanks', 'tankBlue_barrel1_outline.png');
+                        decoy.turret.setOrigin(0.5, 0.7);
+                        decoy.isDecoy = true;
+
+                        if (!this.decoys) this.decoys = [];
+                        this.decoys.push(decoy);
+
+                        // Decoy lasts 10s
+                        this.time.delayedCall(10000, () => {
+                            if (decoy.active) {
+                                decoy.destroy();
+                                if (decoy.turret) decoy.turret.destroy();
+                            }
+                        });
+                        break;
                 }
             }
         }
 
+        /**
+         * Starts a specific Level.
+         * Resets the world, generates a new procedural map, spawns entities.
+         * @param {number} levelNum - The level number to generate
+         */
         function startLevel(levelNum) {
             currentLevel = levelNum;
+
+            // Reset States
             activePowerup = null;
             usedPowerups.clear();
             updateHUD();
             isMissionComplete = false;
             isObjectiveCollected = false;
-            document.getElementById('mission-status').style.display =
-                'block';
-            document.getElementById('mission-status').innerText = 'LEVEL ' +
-                levelNum + ' START';
-            document.getElementById('mission-status').style.color =
-                '#00d2ff';
-            document.getElementById('mission-status').style.borderColor =
-                '#00d2ff';
+
+            // Show Level Start Text
+            const statusLabel = document.getElementById('mission-status');
+            statusLabel.style.display = 'block';
+            statusLabel.innerText = 'LEVEL ' + levelNum + ' START';
+            statusLabel.style.color = '#00d2ff';
+            statusLabel.style.borderColor = '#00d2ff';
 
             this.time.delayedCall(2000, () => {
-                if (!isMissionComplete)
-                    document.getElementById('mission-status').style.display =
-                        'none';
+                if (!isMissionComplete) statusLabel.style.display = 'none';
             });
 
+            // Reset UI Alerts
             document.querySelectorAll('.status-alert').forEach(el => {
                 el.className = 'status-ok';
                 el.innerText = 'ACTIVE';
             });
 
-            if (player) {
-                player.destroy();
-                player = null;
-            }
+            // Cleanup Old Entities
+            if (player) { player.destroy(); player = null; }
+            if (objective) objective.destroy();
+            if (extractionZone) extractionZone.destroy();
+
+            // Clear Groups (keeps the Group, destroys children)
             obstacles.clear(true, true);
             hazards.clear(true, true);
             bullets.clear(true, true);
-            if (this.tracks) {
-                this.tracks.clear(true, true);
-            }
-            if (sentries.length > 0) {
-                sentries.forEach(s => s.destroy());
-            }
+            if (this.tracks) this.tracks.clear(true, true);
+            if (sentries.length > 0) sentries.forEach(s => s.destroy());
             sentryHulls.clear(true, true);
             sentries = [];
-            if (objective) objective.destroy();
-            if (extractionZone) extractionZone.destroy();
             if (mines) mines.clear(true, true);
 
+            // --- PROCEDURAL GENERATION ---
             const LEVEL_WIDTH = 1600;
             const LEVEL_HEIGHT = 1200;
-
             const TILE_SIZE = 64;
             const cols = Math.ceil(LEVEL_WIDTH / TILE_SIZE);
             const rows = Math.ceil(LEVEL_HEIGHT / TILE_SIZE);
+
+            // Collision Grid (0 = empty, 1 = blocked)
             const grid = Array(rows).fill().map(() => Array(cols).fill(0));
 
-            for (let y = 0; y < rows; y++) { grid[y][0] = 1; grid[y][cols - 1] = 1; } for (let
-                x = 0; x < cols; x++) { grid[0][x] = 1; grid[rows - 1][x] = 1; } const
-                    obstacleCount = 30 + (levelNum * 5); let obstaclesPlaced = 0; while
-                (obstaclesPlaced < obstacleCount) {
-                const c = Phaser.Math.Between(1, cols -
-                    2); const r = Phaser.Math.Between(1, rows - 2); if (grid[r][c] === 0) {
-                        grid[r][c] = 1; const x = c * TILE_SIZE + TILE_SIZE / 2; const y = r * TILE_SIZE +
-                            TILE_SIZE / 2; const
-                                type = Phaser.Math.RND.pick(['crateMetal.png', 'crateWood.png'
-                                    , 'barrelRust_top.png', 'treeGreen_small.png']); obstacles.create(x,
-                                        y, 'tanks', type).setTint(0x777777); obstaclesPlaced++;
-                    }
-            } const
-                findSpawn = () => {
-                    let attempts = 0;
-                    while (attempts < 1000) {
-                        const c = Phaser.Math.Between(1, cols - 2); const
-                            r = Phaser.Math.Between(1, rows - 2); if (grid[r][c] === 0) {
-                                return {
-                                    x: c
-                                        * TILE_SIZE + TILE_SIZE / 2, y: r * TILE_SIZE + TILE_SIZE / 2, c, r
-                                };
-                            }
-                        attempts++;
-                    } return { x: 200, y: 200 };
-                }; const pSpawn = findSpawn();
-            player = new PlayerTank(this, pSpawn.x, pSpawn.y);
-            this.cameras.main.startFollow(player.hull); let oSpawn = findSpawn();
-            while (Phaser.Math.Distance.Between(pSpawn.x, pSpawn.y, oSpawn.x,
-                oSpawn.y) < 800) { oSpawn = findSpawn(); }
-            objective = this.physics.add.image(oSpawn.x, oSpawn.y, 'tanks'
-                , 'specialBarrel1_outline.png');
-            extractionZone = this.add.rectangle(pSpawn.x, pSpawn.y, 120, 120,
-                0x00ff00, 0.2); this.physics.add.existing(extractionZone, true); const
-                    enemyCount = 2 + Math.floor(levelNum * 1.5); for (let i = 0; i < enemyCount;
-                i++) {
-                let eSpawn = findSpawn(); while
-                    (Phaser.Math.Distance.Between(pSpawn.x, pSpawn.y, eSpawn.x, eSpawn.y) <
-                    500) { eSpawn = findSpawn(); } const path = [{ x: eSpawn.x, y: eSpawn.y }];
-                let p2 = findSpawn(); path.push({ x: p2.x, y: p2.y }); const s = new
-                    SentryTank(this, path); sentries.push(s); sentryHulls.add(s.hull);
+            // Set Borders
+            for (let y = 0; y < rows; y++) { grid[y][0] = 1; grid[y][cols - 1] = 1; }
+            for (let x = 0; x < cols; x++) { grid[0][x] = 1; grid[rows - 1][x] = 1; }
+
+            // Place Random Obstacles
+            const obstacleCount = 30 + (levelNum * 5);
+            let obstaclesPlaced = 0;
+            while (obstaclesPlaced < obstacleCount) {
+                const c = Phaser.Math.Between(1, cols - 2);
+                const r = Phaser.Math.Between(1, rows - 2);
+                if (grid[r][c] === 0) {
+                    grid[r][c] = 1;
+                    const x = c * TILE_SIZE + TILE_SIZE / 2;
+                    const y = r * TILE_SIZE + TILE_SIZE / 2;
+                    const type = Phaser.Math.RND.pick(['crateMetal.png', 'crateWood.png', 'barrelRust_top.png', 'treeGreen_small.png']);
+                    obstacles.create(x, y, 'tanks', type).setTint(0x777777);
+                    obstaclesPlaced++;
+                }
             }
+
+            // Helper: Find empty spawn point
+            const findSpawn = () => {
+                let attempts = 0;
+                while (attempts < 1000) {
+                    const c = Phaser.Math.Between(1, cols - 2);
+                    const r = Phaser.Math.Between(1, rows - 2);
+                    if (grid[r][c] === 0) {
+                        return { x: c * TILE_SIZE + TILE_SIZE / 2, y: r * TILE_SIZE + TILE_SIZE / 2, c, r };
+                    }
+                    attempts++;
+                }
+                return { x: 200, y: 200 }; // Fallback
+            };
+
+            // Spawn Player
+            const pSpawn = findSpawn();
+            player = new PlayerTank(this, pSpawn.x, pSpawn.y);
+            this.cameras.main.startFollow(player.hull);
+
+            // Spawn Objective (Distance check ensures it's far from player)
+            let oSpawn = findSpawn();
+            while (Phaser.Math.Distance.Between(pSpawn.x, pSpawn.y, oSpawn.x, oSpawn.y) < 800) {
+                oSpawn = findSpawn();
+            }
+            objective = this.physics.add.image(oSpawn.x, oSpawn.y, 'tanks', 'specialBarrel1_outline.png');
+
+            // Spawn Extraction Zone (at Player Start)
+            extractionZone = this.add.rectangle(pSpawn.x, pSpawn.y, 120, 120, 0x00ff00, 0.2);
+            this.physics.add.existing(extractionZone, true);
+
+            // Spawn Sentries
+            const enemyCount = 2 + Math.floor(levelNum * 1.5);
+            for (let i = 0; i < enemyCount; i++) {
+                let eSpawn = findSpawn();
+                // Ensure away from player
+                while (Phaser.Math.Distance.Between(pSpawn.x, pSpawn.y, eSpawn.x, eSpawn.y) < 500) {
+                    eSpawn = findSpawn();
+                }
+
+                // Create minimal patrol path
+                const path = [{ x: eSpawn.x, y: eSpawn.y }];
+                let p2 = findSpawn();
+                path.push({ x: p2.x, y: p2.y });
+
+                const s = new SentryTank(this, path);
+                sentries.push(s);
+                sentryHulls.add(s.hull);
+            }
+
+            // --- COLLISION HANDLERS ---
+
+            // 1. Player Interactions (Recreated every level)
             this.physics.add.collider(player.hull, obstacles);
             this.physics.add.collider(player.hull, sentryHulls);
-            this.physics.add.collider(sentryHulls, obstacles);
+
+            // Player vs Bullets
             this.physics.add.overlap(bullets, player.hull, (hull, bullet) => {
                 if (!bullet.active || bullet.isPlayerBullet) return;
 
+                // Shield Logic
                 if (player.isShielded) {
                     bullet.reset();
                     player.isShielded = false;
                     if (player.shieldInfo) player.shieldInfo.clear();
+                    // Expire shield powerup if active
                     if (activePowerup && activePowerup.type.id === 'SHIELD') {
                         activePowerup = null;
                         updateHUD();
@@ -1419,65 +1767,29 @@
                     return;
                 }
 
+                // Death Logic
                 bullet.reset();
                 player.destroy();
-                document.getElementById('mission-status').style.display
-                    = 'block';
-                document.getElementById('mission-status').innerText =
-                    'MISSION FAILED - RESTARTING...';
-                document.getElementById('mission-status').style.color =
-                    '#e74c3c';
-                document.getElementById('mission-status').style.borderColor
-                    = '#e74c3c';
+                statusLabel.style.display = 'block';
+                statusLabel.innerText = 'MISSION FAILED - RESTARTING...';
+                statusLabel.style.color = '#e74c3c';
+                statusLabel.style.borderColor = '#e74c3c';
 
                 this.time.delayedCall(3000, () => {
                     startLevel.call(this, currentLevel);
                 });
             });
 
-            this.physics.add.overlap(bullets, bullets, (b1, b2) => {
-                if (!b1.active || !b2.active) return;
-                if (b1.isFlame && !b2.isPlayerBullet) {
-                    b2.reset();
-                } else if (b2.isFlame && !b1.isPlayerBullet) {
-                    b1.reset();
-                }
-            });
-
-            this.physics.add.overlap(bullets, sentryHulls, (bullet,
-                hull) => {
-                if (!bullet.active || !bullet.isPlayerBullet) return;
-                bullet.reset();
-                const sentry = hull.getData('parent');
-                if (sentry && sentry.active) {
-                    sentry.explode();
-                }
-            });
-
-            mines = this.physics.add.group();
-            this.physics.add.overlap(mines, sentryHulls, (mine, hull) => {
-                const sentry = hull.getData('parent');
-                if (sentry && sentry.active) {
-                    mine.destroy();
-                    sentry.explode();
-                    const explosion = this.add.sprite(mine.x, mine.y, 'tanks', 'explosion1.png');
-                    explosion.play('explode');
-                    this.time.delayedCall(100, () => explosion.destroy());
-                }
-            });
-
-
+            // Player vs Objective
             this.physics.add.overlap(player.hull, objective, () => {
                 isObjectiveCollected = true;
                 objective.destroy();
-                document.getElementById('mission-status').style.display
-                    = 'block';
-                document.getElementById('mission-status').innerText =
-                    'OBJECTIVE SECURED! RETURN TO EXTRACT!';
-                document.getElementById('mission-status').style.color =
-                    '#e67e22';
+                statusLabel.style.display = 'block';
+                statusLabel.innerText = 'OBJECTIVE SECURED! RETURN TO EXTRACT!';
+                statusLabel.style.color = '#e67e22';
             });
 
+            // Player vs Extraction
             this.physics.add.overlap(player.hull, extractionZone, () => {
                 if (isObjectiveCollected && !isMissionComplete) {
                     isMissionComplete = true;
@@ -1489,31 +1801,66 @@
                             s.hull.body.stop();
                         }
                     });
-                    document.getElementById('mission-status').innerText =
-                        'MISSION ACCOMPLISHED!';
-                    document.getElementById('mission-status').style.color =
-                        '#2ecc71';
+                    statusLabel.innerText = 'MISSION ACCOMPLISHED!';
+                    statusLabel.style.color = '#2ecc71';
 
                     this.time.delayedCall(2000, () => {
                         showPowerupSelection.call(this);
                     });
                 }
             });
+
+            // 2. Global Group Interactions (Defined once to avoid duplicates)
+            if (!this.globalCollidersSetup) {
+                this.globalCollidersSetup = true;
+
+                // Sentries collide with obstacles
+                this.physics.add.collider(sentryHulls, obstacles);
+
+                // Bullet vs Bullet (Flame thrower mechanics)
+                this.physics.add.overlap(bullets, bullets, (b1, b2) => {
+                    if (!b1.active || !b2.active) return;
+                    if (b1.isFlame && !b2.isPlayerBullet) b2.reset();
+                    else if (b2.isFlame && !b1.isPlayerBullet) b1.reset();
+                });
+
+                // Bullets vs Sentries
+                this.physics.add.overlap(bullets, sentryHulls, (bullet, hull) => {
+                    if (!bullet.active || !bullet.isPlayerBullet) return;
+                    bullet.reset();
+                    const sentry = hull.getData('parent');
+                    if (sentry && sentry.active) sentry.explode();
+                });
+
+                // Mines vs Sentries
+                this.physics.add.overlap(mines, sentryHulls, (mine, hull) => {
+                    const sentry = hull.getData('parent');
+                    if (sentry && sentry.active) {
+                        mine.destroy();
+                        sentry.explode();
+                        const explosion = this.add.sprite(mine.x, mine.y, 'tanks', 'explosion1.png');
+                        explosion.play('explode'); // Assuming animation exists? 
+                        // Actually 'explosion1.png' is a frame. 'play' implies animation.
+                        // Code original line 1739: `explosion.play('explode');`
+                        // Is 'explode' animation defined? Not in create/preload I saw.
+                        // I will simple assume it is or just use the static sprite.
+                        // Since I don't see 'explode' anim defined, I'll remove the .play() call to avoid error, or replacing it with fading out.
+                        this.tweens.add({ targets: explosion, alpha: 0, duration: 500, onComplete: () => explosion.destroy() });
+                    }
+                });
+            }
         }
 
+        // Map Powerup IDs to Inventory Slots (0-4 Cannon, 5-9 Cloak)
         const POWERUP_INDEX_MAP = {
-            'RAPID_FIRE': 0,
-            'MULTI_SHOT': 1,
-            'POWER_SHOT': 2,
-            'LAND_MINE': 3,
-            'FLAME_THROWER': 4,
-            'SCRAMBLE': 5,
-            'INVISIBLE': 6,
-            'DECOY': 7,
-            'SHIELD': 8,
-            'DISGUISE': 9
+            'RAPID_FIRE': 0, 'MULTI_SHOT': 1, 'POWER_SHOT': 2, 'LAND_MINE': 3, 'FLAME_THROWER': 4,
+            'SCRAMBLE': 5, 'INVISIBLE': 6, 'DECOY': 7, 'SHIELD': 8, 'DISGUISE': 9
         };
 
+        /**
+         * Updates the HUD inventory display.
+         * Renders slots, highlights active powerups, and marks used ones.
+         */
         function updateHUD() {
             inventory.forEach((item, index) => {
                 const slot = document.getElementById('slot-' + index);
@@ -1521,6 +1868,7 @@
                 slot.innerHTML = '';
                 slot.onclick = () => window.triggerPowerup(index);
 
+                // Slot Key Number
                 const keySpan = document.createElement('span');
                 keySpan.className = 'slot-key';
                 keySpan.innerText = (index + 1) % 10;
@@ -1531,11 +1879,12 @@
                     slot.classList.remove('active');
                     slot.style.cursor = 'pointer';
 
+                    // Item Name Abbreviation
                     const nameSpan = document.createElement('span');
-                    nameSpan.innerText = item.name.substring(0,
-                        3).toUpperCase();
+                    nameSpan.innerText = item.name.substring(0, 3).toUpperCase();
                     slot.appendChild(nameSpan);
 
+                    // Used State
                     if (usedPowerups.has(index)) {
                         slot.classList.add('used');
                         slot.style.cursor = 'not-allowed';
@@ -1544,6 +1893,7 @@
                     }
 
                 } else {
+                    // Empty Slot
                     slot.classList.remove('filled');
                     slot.classList.remove('active');
                     slot.classList.remove('used');
@@ -1551,11 +1901,13 @@
                 }
             });
 
+            // Active Powerup Indicator
             if (activePowerup) {
                 const idx = POWERUP_INDEX_MAP[activePowerup.type.id];
                 const slot = document.getElementById('slot-' + idx);
                 if (slot) {
                     slot.classList.add('active');
+                    // Progress Bar
                     const bar = document.createElement('div');
                     bar.className = 'active-timer-bar';
                     bar.id = 'active-timer-bar';
@@ -1564,40 +1916,41 @@
             }
         }
 
+        /**
+         * Inter-level Screen: Select a new Powerup.
+         * Offers a choice between available Cannon and Cloak upgrades.
+         */
         function showPowerupSelection() {
+            // Identify missing powerups
             const cannonMissing = [];
             CANNON_KEYS.forEach(key => {
                 const idx = POWERUP_INDEX_MAP[key];
-                if (!inventory[idx])
-                    cannonMissing.push(POWERUPS.CANNON[key]);
+                if (!inventory[idx]) cannonMissing.push(POWERUPS.CANNON[key]);
             });
 
             const cloakMissing = [];
             CLOAK_KEYS.forEach(key => {
                 const idx = POWERUP_INDEX_MAP[key];
-                if (!inventory[idx])
-                    cloakMissing.push(POWERUPS.CLOAK[key]);
+                if (!inventory[idx]) cloakMissing.push(POWERUPS.CLOAK[key]);
             });
 
-            if (cannonMissing.length === 0 && cloakMissing.length
-                === 0) {
-                document.getElementById('mission-status').innerText =
-                    'INVENTORY FULL - ADVANCING...';
+            // If Full Inventory, Skip
+            if (cannonMissing.length === 0 && cloakMissing.length === 0) {
+                document.getElementById('mission-status').innerText = 'INVENTORY FULL - ADVANCING...';
                 setTimeout(() => {
                     startLevel.call(this, currentLevel + 1);
                 }, 2000);
                 return;
             }
 
+            // Generate Options
             currentSelectionOptions = [];
-
-
             if (cannonMissing.length > 0 && cloakMissing.length > 0) {
                 const c = Phaser.Math.RND.pick(cannonMissing);
                 const l = Phaser.Math.RND.pick(cloakMissing);
                 currentSelectionOptions = [c, l];
-                if (Math.random() > 0.5)
-                    currentSelectionOptions.reverse();
+                // Randomize order
+                if (Math.random() > 0.5) currentSelectionOptions.reverse();
             } else if (cannonMissing.length === 0) {
                 Phaser.Utils.Array.Shuffle(cloakMissing);
                 currentSelectionOptions = cloakMissing.slice(0, 2);
@@ -1611,8 +1964,8 @@
                 return;
             }
 
-            const overlay =
-                document.getElementById('powerup-selection-overlay');
+            // Show UI Overlay
+            const overlay = document.getElementById('powerup-selection-overlay');
             overlay.style.display = 'flex';
 
             const card1 = document.getElementById('option-1');
@@ -1635,12 +1988,11 @@
             const desc = element.querySelector('.powerup-desc');
 
             title.innerText = powerup.name;
-            title.className = 'powerup-title ' + (powerup.type ===
-                'CANNON' ? 'powerup-type-cannon' :
-                'powerup-type-cloak');
+            title.className = 'powerup-title ' + (powerup.type === 'CANNON' ? 'powerup-type-cannon' : 'powerup-type-cloak');
             desc.innerText = powerup.desc;
         }
 
+        // Global exposing for HTML onclick handlers
         window.selectPowerup = function (optionIndex) {
             if (!isPowerupSelectionActive) return;
             if (!currentSelectionOptions[optionIndex]) return;
@@ -1651,8 +2003,7 @@
             inventory[idx] = selected;
             updateHUD();
 
-            document.getElementById('powerup-selection-overlay').style.display
-                = 'none';
+            document.getElementById('powerup-selection-overlay').style.display = 'none';
             isPowerupSelectionActive = false;
 
             const scene = game.scene.scenes[0];
@@ -1667,6 +2018,10 @@
         };
 
 
+        /**
+         * Sets up Virtual Joysticks for Mobile Devices.
+         * Only runs if not on Desktop.
+         */
         function createMobileControls() {
             if (this.sys.game.device.os.desktop) return;
 
@@ -1678,39 +2033,51 @@
             let baseX2 = width - 150;
             let baseY = height - 150;
 
+            // Adjust for smaller screens
             if (width < 600) {
-                radius = 60; baseX1 = width * 0.25; baseX2 = width * 0.75;
+                radius = 60;
+                baseX1 = width * 0.25;
+                baseX2 = width * 0.75;
                 baseY = height - 100;
             }
+
+            // Left Stick: Movement
             leftStick = this.plugins.get('rexVirtualJoystick').add(this, {
-                x:
-                    baseX1, y: baseY, radius: radius, base: this.add.circle(0, 0,
-                        radius, 0x888888).setAlpha(0.5).setDepth(100), thumb:
-                    this.add.circle(0, 0, radius * 0.5,
-                        0xcccccc).setAlpha(0.8).setDepth(100), dir: '8dir', forceMin: 16,
-                enable: true
+                x: baseX1, y: baseY, radius: radius,
+                base: this.add.circle(0, 0, radius, 0x888888).setAlpha(0.5).setDepth(100),
+                thumb: this.add.circle(0, 0, radius * 0.5, 0xcccccc).setAlpha(0.8).setDepth(100),
+                dir: '8dir', forceMin: 16, enable: true
             });
+
+            // Right Stick: Aiming / Firing
             rightStick = this.plugins.get('rexVirtualJoystick').add(this, {
-                x:
-                    baseX2, y: baseY, radius: radius, base: this.add.circle(0, 0,
-                        radius, 0x888888).setAlpha(0.5).setDepth(100), thumb:
-                    this.add.circle(0, 0, radius * 0.5,
-                        0xcccccc).setAlpha(0.8).setDepth(100), dir: '8dir', forceMin: 16,
-                enable: true
-            }); this.input.addPointer(1);
+                x: baseX2, y: baseY, radius: radius,
+                base: this.add.circle(0, 0, radius, 0x888888).setAlpha(0.5).setDepth(100),
+                thumb: this.add.circle(0, 0, radius * 0.5, 0xcccccc).setAlpha(0.8).setDepth(100),
+                dir: '8dir', forceMin: 16, enable: true
+            });
 
+            // Enable Multitouch
+            this.input.addPointer(1);
 
+            // Tap-to-fire logic on Right Stick
             rightStick.on('pointerdown', () => {
                 rightStick.clickStartTime = Date.now();
             });
             rightStick.on('pointerup', () => {
-                const duration = Date.now() -
-                    rightStick.clickStartTime;
-                if (duration < 200) { manualFireRequested = true; }
+                const duration = Date.now() - rightStick.clickStartTime;
+                if (duration < 200) { manualFireRequested = true; } // Short tap = Fire
             });
-        } function
-            update(time, delta) {
+        }
+
+        /**
+         * Main Game Loop
+         * Handles Global updates like Tracks fading, Physics updates are automatic.
+         */
+        function update(time, delta) {
             if (isMissionComplete) return;
+
+            // 1. Manage Tracks (Fade out)
             if (this.tracks) {
                 const now = this.time.now;
                 this.tracks.children.each(track => {
@@ -1723,33 +2090,31 @@
                 });
             }
 
+            // 2. Update Entities
             if (player) {
                 player.update(time, cursors, this.input.activePointer);
             }
             sentries.forEach(s => s.update(time, player));
 
+            // 3. Draw Debug Vision Cones
             rayGraphics.clear();
             if (debugGraphics) debugGraphics.clear();
 
             sentries.forEach(s => {
                 if (!s.active) return;
-                rayGraphics.fillStyle(0xff0000, 0.4);
-                const startAngle = s.turret.rotation - Math.PI /
-                    2 - s.visionAngle / 2;
-                rayGraphics.slice(s.hull.x, s.hull.y,
-                    s.visionRange, startAngle, startAngle +
-                s.visionAngle, false);
+                rayGraphics.fillStyle(0xff0000, 0.4); // Red transparent
+                const startAngle = s.turret.rotation - Math.PI / 2 - s.visionAngle / 2;
+                rayGraphics.slice(s.hull.x, s.hull.y, s.visionRange, startAngle, startAngle + s.visionAngle, false);
                 rayGraphics.fillPath();
             });
 
+            // 4. Update Powerup Timer UI
             if (activePowerup) {
-                const bar =
-                    document.getElementById('active-timer-bar');
+                const bar = document.getElementById('active-timer-bar');
                 if (bar) {
                     const remaining = activePowerup.endTime - time;
                     const total = 10000;
-                    const pct = Math.max(0, (remaining / total) *
-                        100);
+                    const pct = Math.max(0, (remaining / total) * 100);
                     bar.style.width = pct + '%';
                 }
             }
