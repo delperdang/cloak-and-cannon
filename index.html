@@ -389,6 +389,16 @@
             <div class="crew-member">
                 <span>Jules</span> <span class="crew-role">LDR</span> <span class="status-ok">ACTIVE</span>
             </div>
+
+            <div id="score-container"
+                style="margin-top: 10px; border-top: 1px solid rgba(100, 200, 255, 0.2); padding-top: 10px;">
+                <div style="display: flex; justify-content: space-between; color: #f1c40f; font-weight: bold;">
+                    <span>SCORE</span> <span id="score-display">00000</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; color: #95a5a6; font-size: 10px;">
+                    <span>HIGH</span> <span id="highscore-display">00000</span>
+                </div>
+            </div>
         </div>
         <div id="mission-status"></div>
         <div id="cutscene-overlay">
@@ -713,6 +723,11 @@
         // Visuals / Debugging
         let rayGraphics;           // Graphics object for drawing vision cones
         let debugGraphics;         // General debug drawing
+
+        // Score State
+        let score = 0;
+        let highScore = parseInt(localStorage.getItem('cc_highscore')) || 0;
+        let savedScore = 0; // Checkpoint for level start
 
         // --- POWERUP SYSTEM CONSTANTS ---
         const POWERUPS = {
@@ -1433,6 +1448,7 @@
                     duration: 500,
                     maxParticles: 10
                 });
+                updateScore(1);
                 this.destroy();
             }
         }
@@ -1576,7 +1592,24 @@
                 }
             });
 
+            updateScoreUI();
             startLevel.call(this, currentLevel);
+        }
+
+        function updateScore(points) {
+            score += points;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('cc_highscore', highScore);
+            }
+            updateScoreUI();
+        }
+
+        function updateScoreUI() {
+            const sEl = document.getElementById('score-display');
+            const hEl = document.getElementById('highscore-display');
+            if (sEl) sEl.innerText = score.toString().padStart(5, '0');
+            if (hEl) hEl.innerText = highScore.toString().padStart(5, '0');
         }
 
         /**
@@ -1661,7 +1694,17 @@
             // Reset States
             activePowerup = null;
             usedPowerups.clear();
+
+            // Score Handling (Roguelike-lite: Restart level = Reset to level start score)
+            if (levelNum === 1) {
+                score = 0;
+                savedScore = 0;
+            } else {
+                score = savedScore;
+            }
             updateHUD();
+            updateScoreUI();
+
             isMissionComplete = false;
             isObjectiveCollected = false;
 
@@ -1835,6 +1878,10 @@
                     });
                     statusLabel.innerText = 'MISSION ACCOMPLISHED!';
                     statusLabel.style.color = '#2ecc71';
+
+                    // Round Bonus
+                    updateScore(currentLevel * 100);
+                    savedScore = score; // Checkpoint!
 
                     playCutscene('https://imagedelivery.net/PwwFoxX145pJ1GHCG1Npzg/88c294be-d9f7-4e24-02e2-1e79789e1d00/public', () => {
                         showPowerupSelection.call(this);
