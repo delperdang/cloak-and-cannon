@@ -148,16 +148,16 @@
             transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.8);
             border: 2px solid #e67e22;
-            padding: 20px;
+            border-radius: 4px;
+            padding: 20px 28px;
             color: #e67e22;
             font-size: 24px;
             font-weight: bold;
             display: none;
-            /* Hidden by default */
             text-align: center;
             z-index: 1000;
-            /* Ensure it sits above game objects */
             pointer-events: none;
+            animation: missionIn 0.4s ease-out;
         }
 
         /* 
@@ -369,12 +369,293 @@
             max-width: 100%;
             max-height: 100%;
         }
+
+        /* ─── Score Bar (always visible) ─── */
+        #score-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 28px;
+            background: rgba(0, 0, 0, 0.75);
+            border-bottom: 1px solid rgba(100, 200, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 32px;
+            z-index: 600;
+            pointer-events: none;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+        }
+
+        .score-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .score-bar-label {
+            color: #7f8c8d;
+        }
+
+        .score-bar-value {
+            color: #f1c40f;
+            font-weight: bold;
+        }
+
+        #level-display {
+            color: #00d2ff;
+        }
+
+        /* ─── Active Powerup Banner ─── */
+        #active-powerup-banner {
+            position: absolute;
+            top: 110px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 15, 25, 0.92);
+            border: 1px solid rgba(0, 210, 255, 0.5);
+            border-radius: 6px;
+            padding: 6px 16px 8px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            z-index: 600;
+            pointer-events: none;
+            min-width: 180px;
+            backdrop-filter: blur(4px);
+            animation: slideDown 0.3s ease-out;
+        }
+
+        #active-powerup-banner.visible {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .banner-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #banner-icon {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        #banner-name {
+            font-size: 11px;
+            font-weight: bold;
+            color: #00d2ff;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        #banner-timer-track {
+            width: 100%;
+            height: 3px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        #banner-timer-fill {
+            height: 100%;
+            background: #00d2ff;
+            width: 100%;
+            transition: width 0.1s linear;
+        }
+
+        /* ─── Powerup slot icon/label layout ─── */
+        .slot-icon {
+            font-size: 16px;
+            line-height: 1;
+            display: block;
+        }
+
+        .slot-label {
+            font-size: 7px;
+            color: #95a5a6;
+            display: block;
+            margin-top: 1px;
+        }
+
+        /* ─── Tooltip via data-attribute ─── */
+        .powerup-slot {
+            overflow: visible;
+        }
+
+        .powerup-slot[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 52px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(5, 5, 15, 0.97);
+            color: #ecf0f1;
+            font-size: 10px;
+            font-family: 'Orbitron', sans-serif;
+            padding: 5px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            z-index: 9999;
+            pointer-events: none;
+            border: 1px solid rgba(100,200,255,0.25);
+            max-width: 200px;
+            white-space: normal;
+            text-align: center;
+            width: 160px;
+        }
+
+        /* ─── Kill Feed ─── */
+        #kill-feed {
+            position: absolute;
+            top: 40px;
+            right: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            z-index: 600;
+            pointer-events: none;
+        }
+
+        .kill-toast {
+            background: rgba(10, 15, 20, 0.88);
+            border: 1px solid rgba(46, 204, 113, 0.5);
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-size: 10px;
+            color: #2ecc71;
+            animation: fadeSlide 2s ease-out forwards;
+            white-space: nowrap;
+        }
+
+        /* ─── Powerup card icon + type badge ─── */
+        .card-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .card-type-badge {
+            display: inline-block;
+            font-size: 9px;
+            font-weight: bold;
+            letter-spacing: 0.1em;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .badge-cannon {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+        }
+
+        .badge-cloak {
+            background: rgba(155, 89, 182, 0.2);
+            border: 1px solid #9b59b6;
+            color: #9b59b6;
+        }
+
+        /* ─── Inventory Preview in selection screen ─── */
+        #inventory-preview {
+            display: flex;
+            gap: 6px;
+            margin-top: 24px;
+        }
+
+        .inv-slot {
+            width: 28px;
+            height: 28px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            border: 1px solid #333;
+            background: rgba(10,10,10,0.8);
+        }
+
+        .inv-slot.inv-cannon { border-bottom: 2px solid #e74c3c; }
+        .inv-slot.inv-cloak  { border-bottom: 2px solid #9b59b6; }
+        .inv-slot.inv-empty  { opacity: 0.3; }
+
+        /* ─── Keyframe Animations ─── */
+        @keyframes missionIn {
+            from { opacity: 0; transform: translate(-50%, -60%); }
+            to   { opacity: 1; transform: translate(-50%, -50%); }
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        @keyframes overlayIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeSlide {
+            0%   { opacity: 0; transform: translateX(10px); }
+            15%  { opacity: 1; transform: translateX(0); }
+            75%  { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* ─── Upgraded card hover ─── */
+        .powerup-card:hover {
+            border-color: #3498db !important;
+            background: rgba(40, 40, 60, 0.95) !important;
+            transform: translateY(-6px) scale(1.02) !important;
+            box-shadow: 0 0 25px rgba(52, 152, 219, 0.4) !important;
+        }
+
+        .powerup-card {
+            animation: cardIn 0.35s ease-out;
+        }
+
+        #powerup-selection-overlay.visible {
+            animation: overlayIn 0.25s ease-out;
+        }
+
+        /* ─── Push powerup HUD down to clear score bar ─── */
+        #powerup-hud {
+            top: 36px;
+        }
     </style>
 </head>
 
 <body>
 
     <div id="game-container">
+        <div id="score-bar">
+            <div class="score-bar-item">
+                <span class="score-bar-label">SCORE</span>
+                <span class="score-bar-value" id="score-display">00000</span>
+            </div>
+            <div class="score-bar-item">
+                <span class="score-bar-label">LV</span>
+                <span class="score-bar-value" id="level-display">01</span>
+            </div>
+            <div class="score-bar-item">
+                <span class="score-bar-label">HI</span>
+                <span class="score-bar-value" id="highscore-display">00000</span>
+            </div>
+        </div>
+        <div id="kill-feed"></div>
         <div id="ui-layer">
             <h2>Tank Crew</h2>
             <div class="crew-member">
@@ -390,15 +671,6 @@
                 <span>Jules</span> <span class="crew-role">LDR</span> <span class="status-ok">ACTIVE</span>
             </div>
 
-            <div id="score-container"
-                style="margin-top: 10px; border-top: 1px solid rgba(100, 200, 255, 0.2); padding-top: 10px;">
-                <div style="display: flex; justify-content: space-between; color: #f1c40f; font-weight: bold;">
-                    <span>SCORE</span> <span id="score-display">00000</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; color: #95a5a6; font-size: 10px;">
-                    <span>HIGH</span> <span id="highscore-display">00000</span>
-                </div>
-            </div>
         </div>
         <div id="mission-status"></div>
         <div id="cutscene-overlay">
@@ -407,17 +679,22 @@
     </div>
 
     <div id="powerup-selection-overlay">
-        <h2 style="color: #fff; margin-bottom: 30px;">SELECT REWARD</h2>
+        <h2 style="color: #fff; margin-bottom: 30px; letter-spacing: 0.12em;">SELECT REWARD</h2>
         <div id="selection-container" style="display: flex; gap: 20px;">
             <div id="option-1" class="powerup-card" onclick="selectPowerup(0)">
+                <div class="card-icon"></div>
+                <div class="card-type-badge"></div>
                 <div class="powerup-title">OPTION 1</div>
                 <div class="powerup-desc">...</div>
             </div>
             <div id="option-2" class="powerup-card" onclick="selectPowerup(1)">
+                <div class="card-icon"></div>
+                <div class="card-type-badge"></div>
                 <div class="powerup-title">OPTION 2</div>
                 <div class="powerup-desc">...</div>
             </div>
         </div>
+        <div id="inventory-preview"></div>
     </div>
 
     <div id="powerup-hud">
@@ -431,6 +708,15 @@
         <div class="powerup-slot slot-cloak" id="slot-7"><span class="slot-key">8</span></div>
         <div class="powerup-slot slot-cloak" id="slot-8"><span class="slot-key">9</span></div>
         <div class="powerup-slot slot-cloak" id="slot-9"><span class="slot-key">0</span></div>
+    </div>
+    <div id="active-powerup-banner">
+        <div class="banner-row">
+            <span id="banner-icon">⚡</span>
+            <span id="banner-name">RAPID FIRE</span>
+        </div>
+        <div id="banner-timer-track">
+            <div id="banner-timer-fill"></div>
+        </div>
     </div>
     </div>
 
@@ -757,6 +1043,12 @@
 
         const CANNON_KEYS = Object.keys(POWERUPS.CANNON);
         const CLOAK_KEYS = Object.keys(POWERUPS.CLOAK);
+
+        const POWERUP_ICONS = {
+            RAPID_FIRE: '⚡', MULTI_SHOT: '⊕', POWER_SHOT: '💥',
+            LAND_MINE: '💣', FLAME_THROWER: '🔥',
+            SCRAMBLE: '📡', INVISIBLE: '👁', DECOY: '🔵', SHIELD: '🛡', DISGUISE: '🎭'
+        };
 
         // Inventory State
         let activePowerup = null;   // Currently active buff (e.g., RAPID_FIRE active now)
@@ -1448,6 +1740,7 @@
                     duration: 500,
                     maxParticles: 10
                 });
+                showKillToast('SENTRY DOWN  +1');
                 updateScore(1);
                 this.destroy();
             }
@@ -1496,7 +1789,7 @@
                         ? (Math.random() < 0.5 ? 'tileSand1.png' : 'tileSand2.png')
                         : (Math.random() < 0.5 ? 'tileGrass1.png' : 'tileGrass2.png');
 
-                    this.add.image(x * 64 + 32, y * 64 + 32, 'tanks', tileType).setTint(0x777777);
+                    this.add.image(x * 64 + 32, y * 64 + 32, 'tanks', tileType).setTint(isSand ? 0xb8a060 : 0x6a8a6a);
                     this.tileGrid[y][x] = isSand ? 'sand' : 'grass';
                 }
             }
@@ -1596,6 +1889,18 @@
             startLevel.call(this, currentLevel);
         }
 
+        function showKillToast(message) {
+            const feed = document.getElementById('kill-feed');
+            if (!feed) return;
+            const toast = document.createElement('div');
+            toast.className = 'kill-toast';
+            toast.innerText = message;
+            feed.appendChild(toast);
+            // Cap at 3 visible toasts
+            while (feed.children.length > 3) feed.removeChild(feed.firstChild);
+            setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 2000);
+        }
+
         function updateScore(points) {
             score += points;
             if (score > highScore) {
@@ -1610,6 +1915,11 @@
             const hEl = document.getElementById('highscore-display');
             if (sEl) sEl.innerText = score.toString().padStart(5, '0');
             if (hEl) hEl.innerText = highScore.toString().padStart(5, '0');
+        }
+
+        function updateLevelDisplay() {
+            const lEl = document.getElementById('level-display');
+            if (lEl) lEl.innerText = currentLevel.toString().padStart(2, '0');
         }
 
         /**
@@ -1683,6 +1993,18 @@
          * Resets the world, generates a new procedural map, spawns entities.
          * @param {number} levelNum - The level number to generate
          */
+        function showMissionStatus(text, color) {
+            const el = document.getElementById('mission-status');
+            el.style.display = 'none';
+            el.style.animation = 'none';
+            el.offsetWidth; // force reflow to restart animation
+            el.style.animation = '';
+            el.innerText = text;
+            el.style.color = color;
+            el.style.borderColor = color;
+            el.style.display = 'block';
+        }
+
         function startLevel(levelNum) {
             currentLevel = levelNum;
 
@@ -1710,10 +2032,8 @@
 
             // Show Level Start Text
             const statusLabel = document.getElementById('mission-status');
-            statusLabel.style.display = 'block';
-            statusLabel.innerText = 'LEVEL ' + levelNum + ' START';
-            statusLabel.style.color = '#00d2ff';
-            statusLabel.style.borderColor = '#00d2ff';
+            showMissionStatus('LEVEL ' + levelNum + ' START', '#00d2ff');
+            updateLevelDisplay();
 
             this.time.delayedCall(2000, () => {
                 if (!isMissionComplete) statusLabel.style.display = 'none';
@@ -1845,10 +2165,7 @@
                 // Death Logic
                 bullet.reset();
                 player.destroy();
-                statusLabel.style.display = 'block';
-                statusLabel.innerText = 'MISSION FAILED';
-                statusLabel.style.color = '#e74c3c';
-                statusLabel.style.borderColor = '#e74c3c';
+                showMissionStatus('MISSION FAILED', '#e74c3c');
 
                 playCutscene('https://imagedelivery.net/PwwFoxX145pJ1GHCG1Npzg/b7010e1d-7a5a-4fcd-bcdc-2d3ecfa24b00/public', () => {
                     startLevel.call(this, currentLevel);
@@ -1859,9 +2176,7 @@
             this.physics.add.overlap(player.hull, objective, () => {
                 isObjectiveCollected = true;
                 objective.destroy();
-                statusLabel.style.display = 'block';
-                statusLabel.innerText = 'OBJECTIVE SECURED! RETURN TO EXTRACT!';
-                statusLabel.style.color = '#e67e22';
+                showMissionStatus('OBJECTIVE SECURED! RETURN TO EXTRACT!', '#e67e22');
             });
 
             // Player vs Extraction
@@ -1876,8 +2191,7 @@
                             s.hull.body.stop();
                         }
                     });
-                    statusLabel.innerText = 'MISSION ACCOMPLISHED!';
-                    statusLabel.style.color = '#2ecc71';
+                    showMissionStatus('MISSION ACCOMPLISHED!', '#2ecc71');
 
                     // Round Bonus
                     updateScore(currentLevel * 100);
@@ -1952,7 +2266,7 @@
 
         /**
          * Updates the HUD inventory display.
-         * Renders slots, highlights active powerups, and marks used ones.
+         * Renders slots with icons, labels, tooltips, and the active powerup banner.
          */
         function updateHUD() {
             inventory.forEach((item, index) => {
@@ -1960,6 +2274,7 @@
 
                 slot.innerHTML = '';
                 slot.onclick = () => window.triggerPowerup(index);
+                delete slot.dataset.tooltip;
 
                 // Slot Key Number
                 const keySpan = document.createElement('span');
@@ -1969,43 +2284,50 @@
 
                 if (item) {
                     slot.classList.add('filled');
-                    slot.classList.remove('active');
+                    slot.classList.remove('active', 'used');
                     slot.style.cursor = 'pointer';
+                    slot.dataset.tooltip = item.name + ': ' + item.desc;
 
-                    // Item Name Abbreviation
-                    const nameSpan = document.createElement('span');
-                    nameSpan.innerText = item.name.substring(0, 3).toUpperCase();
-                    slot.appendChild(nameSpan);
+                    const iconSpan = document.createElement('span');
+                    iconSpan.className = 'slot-icon';
+                    iconSpan.innerText = POWERUP_ICONS[item.id] || '?';
+                    slot.appendChild(iconSpan);
 
-                    // Used State
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'slot-label';
+                    labelSpan.innerText = item.name.substring(0, 3).toUpperCase();
+                    slot.appendChild(labelSpan);
+
                     if (usedPowerups.has(index)) {
                         slot.classList.add('used');
                         slot.style.cursor = 'not-allowed';
-                    } else {
-                        slot.classList.remove('used');
                     }
-
                 } else {
-                    // Empty Slot
-                    slot.classList.remove('filled');
-                    slot.classList.remove('active');
-                    slot.classList.remove('used');
+                    slot.classList.remove('filled', 'active', 'used');
                     slot.style.cursor = 'default';
                 }
             });
 
-            // Active Powerup Indicator
+            // Active Powerup: highlight slot + update banner
+            const banner = document.getElementById('active-powerup-banner');
             if (activePowerup) {
                 const idx = POWERUP_INDEX_MAP[activePowerup.type.id];
                 const slot = document.getElementById('slot-' + idx);
                 if (slot) {
                     slot.classList.add('active');
-                    // Progress Bar
                     const bar = document.createElement('div');
                     bar.className = 'active-timer-bar';
                     bar.id = 'active-timer-bar';
                     slot.appendChild(bar);
                 }
+                // Show banner
+                if (banner) {
+                    document.getElementById('banner-icon').innerText = POWERUP_ICONS[activePowerup.type.id] || '?';
+                    document.getElementById('banner-name').innerText = activePowerup.type.name.toUpperCase();
+                    banner.classList.add('visible');
+                }
+            } else {
+                if (banner) banner.classList.remove('visible');
             }
         }
 
@@ -2059,6 +2381,10 @@
 
             // Show UI Overlay
             const overlay = document.getElementById('powerup-selection-overlay');
+            overlay.style.display = 'none';
+            overlay.style.animation = 'none';
+            overlay.offsetWidth;
+            overlay.style.animation = '';
             overlay.style.display = 'flex';
 
             const card1 = document.getElementById('option-1');
@@ -2073,13 +2399,34 @@
                 card2.style.display = 'none';
             }
 
+            // Render current inventory as preview strip
+            const preview = document.getElementById('inventory-preview');
+            if (preview) {
+                preview.innerHTML = '';
+                inventory.forEach((item, idx) => {
+                    const dot = document.createElement('div');
+                    const isCannon = idx < 5;
+                    dot.className = 'inv-slot ' + (isCannon ? 'inv-cannon' : 'inv-cloak') + (item ? '' : ' inv-empty');
+                    dot.innerText = item ? (POWERUP_ICONS[item.id] || '?') : '';
+                    dot.title = item ? item.name : (isCannon ? 'Empty cannon slot' : 'Empty cloak slot');
+                    preview.appendChild(dot);
+                });
+            }
+
             isPowerupSelectionActive = true;
         }
 
         function setupCard(element, powerup) {
+            const icon = element.querySelector('.card-icon');
+            const badge = element.querySelector('.card-type-badge');
             const title = element.querySelector('.powerup-title');
             const desc = element.querySelector('.powerup-desc');
 
+            if (icon) icon.innerText = POWERUP_ICONS[powerup.id] || '?';
+            if (badge) {
+                badge.innerText = powerup.type;
+                badge.className = 'card-type-badge ' + (powerup.type === 'CANNON' ? 'badge-cannon' : 'badge-cloak');
+            }
             title.innerText = powerup.name;
             title.className = 'powerup-title ' + (powerup.type === 'CANNON' ? 'powerup-type-cannon' : 'powerup-type-cloak');
             desc.innerText = powerup.desc;
@@ -2203,13 +2550,13 @@
 
             // 4. Update Powerup Timer UI
             if (activePowerup) {
+                const remaining = activePowerup.endTime - time;
+                const total = 10000;
+                const pct = Math.max(0, (remaining / total) * 100);
                 const bar = document.getElementById('active-timer-bar');
-                if (bar) {
-                    const remaining = activePowerup.endTime - time;
-                    const total = 10000;
-                    const pct = Math.max(0, (remaining / total) * 100);
-                    bar.style.width = pct + '%';
-                }
+                if (bar) bar.style.width = pct + '%';
+                const bannerFill = document.getElementById('banner-timer-fill');
+                if (bannerFill) bannerFill.style.width = pct + '%';
             }
         }
     </script>
