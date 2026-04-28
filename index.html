@@ -443,7 +443,7 @@
         #banner-timer-track {
             width: 100%;
             height: 3px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 2px;
             margin-top: 4px;
             overflow: hidden;
@@ -490,7 +490,7 @@
             white-space: nowrap;
             z-index: 9999;
             pointer-events: none;
-            border: 1px solid rgba(100,200,255,0.25);
+            border: 1px solid rgba(100, 200, 255, 0.25);
             max-width: 200px;
             white-space: normal;
             text-align: center;
@@ -567,39 +567,86 @@
             justify-content: center;
             font-size: 14px;
             border: 1px solid #333;
-            background: rgba(10,10,10,0.8);
+            background: rgba(10, 10, 10, 0.8);
         }
 
-        .inv-slot.inv-cannon { border-bottom: 2px solid #e74c3c; }
-        .inv-slot.inv-cloak  { border-bottom: 2px solid #9b59b6; }
-        .inv-slot.inv-empty  { opacity: 0.3; }
+        .inv-slot.inv-cannon {
+            border-bottom: 2px solid #e74c3c;
+        }
+
+        .inv-slot.inv-cloak {
+            border-bottom: 2px solid #9b59b6;
+        }
+
+        .inv-slot.inv-empty {
+            opacity: 0.3;
+        }
 
         /* ─── Keyframe Animations ─── */
         @keyframes missionIn {
-            from { opacity: 0; transform: translate(-50%, -60%); }
-            to   { opacity: 1; transform: translate(-50%, -50%); }
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
         }
 
         @keyframes slideDown {
-            from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
         }
 
         @keyframes overlayIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes cardIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @keyframes fadeSlide {
-            0%   { opacity: 0; transform: translateX(10px); }
-            15%  { opacity: 1; transform: translateX(0); }
-            75%  { opacity: 1; }
-            100% { opacity: 0; }
+            0% {
+                opacity: 0;
+                transform: translateX(10px);
+            }
+
+            15% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+
+            75% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+            }
         }
 
         /* ─── Upgraded card hover ─── */
@@ -617,7 +664,6 @@
         #powerup-selection-overlay.visible {
             animation: overlayIn 0.25s ease-out;
         }
-
     </style>
 </head>
 
@@ -1758,7 +1804,7 @@
             // Make the world large enough to always fill the viewport with no black edges.
             // Pad by 2 full tiles on each axis so the camera never hits the edge on large monitors.
             const TILE_SIZE_INIT = 64;
-            LEVEL_WIDTH  = Math.max(2400, Math.ceil((this.scale.width  + TILE_SIZE_INIT * 4) / TILE_SIZE_INIT) * TILE_SIZE_INIT);
+            LEVEL_WIDTH = Math.max(2400, Math.ceil((this.scale.width + TILE_SIZE_INIT * 4) / TILE_SIZE_INIT) * TILE_SIZE_INIT);
             LEVEL_HEIGHT = Math.max(1600, Math.ceil((this.scale.height + TILE_SIZE_INIT * 4) / TILE_SIZE_INIT) * TILE_SIZE_INIT);
             this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
             this.cameras.main.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
