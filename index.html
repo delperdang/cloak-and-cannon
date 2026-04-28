@@ -41,41 +41,29 @@
          */
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
-        /* 
-         * Global Reset & Layout 
-         * The body is a flex container to center the game canvas on the screen.
-         * Background is nearly black (#050505) for high contrast with the game content.
-         */
+        /* Global Reset & Layout */
         body {
             margin: 0;
             padding: 0;
-            background-color: #050505;
-            display: flex;
-            justify-content: center;
-            /* Horizontally center */
-            align-items: center;
-            /* Vertically center */
-            height: 100vh;
-            /* Full viewport height */
             overflow: hidden;
-            /* Prevent scrollbars if content overflows slightly */
+            background-color: #050505;
             font-family: 'Orbitron', sans-serif;
             color: #ecf0f1;
-            /* Off-white text color for readability */
         }
 
-        /* 
-         * Game Container
-         * Holds the Phaser canvas and UI overlays.
-         * Position relative allows absolute children (UI layers) to position themselves relative to this box.
-         */
         #game-container {
-            position: relative;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            /* Depth effect */
-            border: none;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 100vh;
+            height: 100%;
+        }
+
+        /* Force Phaser canvas to fill its container with no gaps */
+        #game-container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
         }
 
         /* 
@@ -85,7 +73,7 @@
          */
         #ui-layer {
             position: absolute;
-            top: 10px;
+            top: 32px;
             left: 10px;
             width: 200px;
             background: rgba(10, 15, 20, 0.85);
@@ -230,10 +218,9 @@
          */
         #powerup-hud {
             position: absolute;
-            top: 60px;
+            top: 52px;
             left: 50%;
             transform: translateX(-50%);
-            /* Center horizontally */
             display: flex;
             gap: 10px;
             z-index: 500;
@@ -411,7 +398,7 @@
         /* ─── Active Powerup Banner ─── */
         #active-powerup-banner {
             position: absolute;
-            top: 110px;
+            top: 98px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(10, 15, 25, 0.92);
@@ -513,7 +500,7 @@
         /* ─── Kill Feed ─── */
         #kill-feed {
             position: absolute;
-            top: 40px;
+            top: 32px;
             right: 12px;
             display: flex;
             flex-direction: column;
@@ -631,10 +618,6 @@
             animation: overlayIn 0.25s ease-out;
         }
 
-        /* ─── Push powerup HUD down to clear score bar ─── */
-        #powerup-hud {
-            top: 36px;
-        }
     </style>
 </head>
 
@@ -949,12 +932,10 @@
          * and registers the Virtual Joystick plugin for mobile support.
          */
         const config = {
-            type: Phaser.AUTO, // WebGL if available, Canvas fallback
+            type: Phaser.AUTO,
             scale: {
-                mode: Phaser.Scale.FIT, // Scale to fit window while keeping aspect ratio
-                autoCenter: Phaser.Scale.CENTER_BOTH,
-                width: window.innerWidth,
-                height: window.innerHeight,
+                mode: Phaser.Scale.RESIZE, // Canvas always matches container — no black bars
+                autoCenter: Phaser.Scale.NO_CENTER,
             },
             parent: 'game-container', // DOM Element ID
             physics: {
@@ -1005,6 +986,10 @@
         let isObjectiveCollected = false;
         let isMissionComplete = false;
         let currentLevel = 1;
+
+        // World dimensions — set dynamically in create() to cover the full viewport
+        let LEVEL_WIDTH = 2400;
+        let LEVEL_HEIGHT = 1600;
 
         // Visuals / Debugging
         let rayGraphics;           // Graphics object for drawing vision cones
@@ -1770,10 +1755,14 @@
             cursors.d = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
 
             // 3. World Bounds & Camera
-            const LEVEL_WIDTH = 1600;
-            const LEVEL_HEIGHT = 1200;
+            // Make the world large enough to always fill the viewport with no black edges.
+            // Pad by 2 full tiles on each axis so the camera never hits the edge on large monitors.
+            const TILE_SIZE_INIT = 64;
+            LEVEL_WIDTH  = Math.max(2400, Math.ceil((this.scale.width  + TILE_SIZE_INIT * 4) / TILE_SIZE_INIT) * TILE_SIZE_INIT);
+            LEVEL_HEIGHT = Math.max(1600, Math.ceil((this.scale.height + TILE_SIZE_INIT * 4) / TILE_SIZE_INIT) * TILE_SIZE_INIT);
             this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
             this.cameras.main.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
+            this.cameras.main.setBackgroundColor('#4a6a4a'); // muted green fallback
 
             // 4. Background Generation (Grid-based)
             this.tracks = this.add.group();
@@ -2061,8 +2050,7 @@
             if (mines) mines.clear(true, true);
 
             // --- PROCEDURAL GENERATION ---
-            const LEVEL_WIDTH = 1600;
-            const LEVEL_HEIGHT = 1200;
+            // LEVEL_WIDTH and LEVEL_HEIGHT are globals set in create() based on viewport size
             const TILE_SIZE = 64;
             const cols = Math.ceil(LEVEL_WIDTH / TILE_SIZE);
             const rows = Math.ceil(LEVEL_HEIGHT / TILE_SIZE);
